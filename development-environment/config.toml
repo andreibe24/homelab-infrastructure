@@ -1,0 +1,6 @@
+[tools]
+vim = "latest"
+jq = "latest"
+
+[hooks]
+enter = "mise install" # run the command whenever you cd into a project
