@@ -14,18 +14,52 @@ vim ~/.config/mise/config.toml
 ```
 
 
-# Git Setup with SSH Authentication and Auto Commit Signing(Verified Badge)
+# Git Setup
+
+## SSH Authentication
 
 *What*: The title is clear enough.
 
 *How*: Run these commands:
 ```bash
 # Generate keys
-ssh-keygen -t ed25519 -C "<email-address>" -f ~/.ssh/<key-name>
+ssh-keygen -t ed25519 -C "<email>" -f ~/.ssh/<key-name>
 
 # Declare your identity
 git config --global user.name "<name>"
 git config --global user.email "<email>"
+
+# Go to register the keys into the github account
+## Paste that public key into GitHub → Settings → SSH and GPG keys -> Select Authentication keys option
+```
+
+Ensure generated keys are used:
+```bash
+# cat ~/.ssh/config
+Host github.com
+    IdentityFile ~/.ssh/<key-name>
+    IdentitiesOnly yes
+```
+
+Test:
+```bash
+ssh -T git@github.com
+```
+
+Cache auth creds:
+```bash
+# (Optional) Cache your auth credentials for 6 hours
+git config --global credential.helper 'cache --timeout=21600'
+```
+
+## Auto Commit Signing(Verified Badge)
+
+*What*: The title is clear enough.
+
+*How*: Run these commands:
+```bash
+# Generate keys
+ssh-keygen -t ed25519 -C "<email>" -f ~/.ssh/<key-name>
 
 # Tell git to sign with SSH instead of GPG
 git config --global gpg.format ssh
@@ -37,9 +71,5 @@ git config --global user.signingkey ~/.ssh/<key-name>.pub
 git config --global commit.gpgsign true
 
 # Go to register the keys into the github account
-## Paste that public key into GitHub → Settings → SSH and GPG keys -> Select Authentication keys option
 ## Paste that public key into GitHub → Settings → SSH and GPG keys -> Select Signing keys option
-
-# (Optional) Cache your auth credentials for 6 hours
-git config --global credential.helper 'cache --timeout=21600'
 ```
