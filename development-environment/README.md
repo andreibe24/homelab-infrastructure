@@ -73,3 +73,11 @@ git config --global commit.gpgsign true
 # Go to register the keys into the github account
 ## Paste that public key into GitHub → Settings → SSH and GPG keys -> Select Signing keys option
 ```
+
+# Virtual Box
+## Issue: No internet access on VM
+*Solution*: Allow hyperviser to forwards packets to host's interface:
+```bash
+echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
