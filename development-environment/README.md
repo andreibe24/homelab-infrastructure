@@ -81,3 +81,9 @@ git config --global commit.gpgsign true
 echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 ```
+## Issue: Networking hot-update
+*Solution*: Restart VM's network config:
+```bash
+VBoxManage natnetwork stop --netname "<name>"
+VBoxManage natnetwork start --netname "<name"
+```
