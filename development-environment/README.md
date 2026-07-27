@@ -84,6 +84,6 @@ sudo sysctl -p
 ## Issue: Networking hot-update
 *Solution*: Restart VM's network config:
 ```bash
-VBoxManage natnetwork stop --netname "<name>"
-VBoxManage natnetwork start --netname "<name"
+vboxmanage natnetwork stop --netname "<name>"
+vboxmanage natnetwork start --netname "<name"
 ```
