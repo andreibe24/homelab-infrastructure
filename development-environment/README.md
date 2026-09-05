@@ -97,3 +97,12 @@ sudo sysctl -p
 vboxmanage natnetwork stop --netname "<name>"
 vboxmanage natnetwork start --netname "<name"
 ```
+
+
+# Monitoring
+## CPU
+A cpu comes with x cores and y `hardware` threads. In an operating system, number of cpus = number of `hardware` threads.
+
+An application can spin up `software` threads or workers to make use of all cpus. resulting in multiple tasks; as one cpu can handle on task at a time. Also, keep in mind that a loop in codebase is a single task, meaning that you'll exhaust most of the time shares for the cpu that handles the loop task.
+
+When you see 45%cpu usage, that's an average value across all cpus. Get current cpu usage per core with `mpstat -P ALL 1 5` (get stats for every second, with a total of 5 snapshots).
