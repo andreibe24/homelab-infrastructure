@@ -1,3 +1,13 @@
+# Declarative Deps List via package manager
+
+*What*: How to install linux deps from apt package manager
+
+*How*: Here is exactly how:
+```bash
+sudo apt update && sudo xargs -a packages.txt apt install -y
+```
+
+
 # Declarative Deps List via jdx/mise
 
 *What*: Instruct jdx/mise to make available the utilities from `$HOME/.config/mise/config.toml` to all terminal windows.
