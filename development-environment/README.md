@@ -40,6 +40,8 @@ sudo apt update && sudo xargs -a packages.txt apt install -y
 curl https://mise.jdx.dev/install.sh | sh
 
 echo "eval \"\$(<home-dir>/.local/bin/mise activate bash)\"" >> ~/.bashrc
+# or
+echo "mise activate fish | source" >> ~/.config/fish/config.fish
 
 mkdir -p ~/.config/mise
 
