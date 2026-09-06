@@ -1,3 +1,26 @@
+# Interactive shell - fish
+
+*What*: Use a smarter shell.
+
+*How*: Here is exactly how:
+
+Install fish shell via [official docs](https://github.com/fish-shell/fish-shell#packages-for-linux).
+
+Then set fish sh as default user's shell: `chsh -s $(which fish)`.
+
+Lastly, configure Vscode: `Open Command Palette: Ctrl+Shift+P` -> `Type: "Terminal: Select Default Profile"` -> `Choose fish from the list`.
+
+Also, you shoud set up automatic, live history syncing across all your open fish shells:
+
+`~/.config/fish/config.fish`
+```bash
+...
+function sync_history --on-event fish_preexec
+    history merge
+end
+...
+```
+
 # Declarative Deps List via package manager
 
 *What*: How to install linux deps from apt package manager
