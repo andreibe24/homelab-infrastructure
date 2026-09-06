@@ -85,15 +85,10 @@ git config --global commit.gpgsign true
 ```
 
 # Virtual Box
-## Issue: No internet access on VM
-*Solution*: Allow hyperviser to forwards packets to host's interface:
-```bash
-echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
-```
-## Issue: Networking configs won't work
+## Issue: Network issues of VM like internet or ssh connection
 *Solution*: Restart VM's network config (HOT UPDATE):
 ```bash
+kill -9 <vboxnetnatPID> # ps aux | grep VBoxNetNAT
 vboxmanage natnetwork stop --netname "<name>"
 vboxmanage natnetwork start --netname "<name"
 ```
