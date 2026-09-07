@@ -113,7 +113,7 @@ git config --global commit.gpgsign true
 ## Issue: Network issues of VM like internet or ssh connection
 *Solution*: Restart VM's network config (HOT UPDATE):
 ```bash
-kill -9 <vboxnetnatPID> # ps aux | grep VBoxNetNAT
+pkill VBoxNetNAT
 vboxmanage natnetwork stop --netname "<name>"
 vboxmanage natnetwork start --netname "<name"
 ```
