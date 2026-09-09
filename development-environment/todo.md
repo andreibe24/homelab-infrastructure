@@ -25,3 +25,7 @@ My Todo List:
         prometheus metrics
         grafana dashboard
         alertmanager -> notify incidents, k8s cronjob poller fails, etc. 
+
+6. Renovate
+
+        update packages automatically, once a day
