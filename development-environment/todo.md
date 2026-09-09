@@ -19,3 +19,9 @@ My Todo List:
         webapp with http/3 (quic -> udp) + website (frontend):
          -> django backend with aioquic and Hypercorn
          -> vite build with nginx frontend
+
+5. Observability
+
+        prometheus metrics
+        grafana dashboard
+        alertmanager -> notify incidents, k8s cronjob poller fails, etc. 
