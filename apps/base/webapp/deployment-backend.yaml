@@ -1,0 +1,152 @@
+# Django + Hypercorn/aioquic backend.
+#
+# Three listeners, two trust domains:
+#   TCP 8000  plaintext  -> in-mesh (Linkerd mTLS), kubelet probes, /metrics
+#   TCP 8443  TLS        -> edge fallback, mesh-skipped (TLS is end-to-end)
+#   UDP 8443  QUIC/h3    -> edge HTTP/3, mesh-skipped (Linkerd cannot proxy UDP)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-backend
+  labels:
+    app.kubernetes.io/name: webapp
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1 # patched per cluster in apps/homelab/
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webapp
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webapp
+        app.kubernetes.io/component: backend
+      annotations:
+        # --- Linkerd (topic 2) -------------------------------------------------
+        # The namespace carries `linkerd.io/inject: enabled`, so this pod IS meshed
+        # on TCP 8000. Linkerd's proxy only handles TCP, so the QUIC listener would
+        # be invisible to it; these annotations make that explicit and also keep the
+        # end-to-end-TLS TCP listener out of the proxy's iptables redirect, so the
+        # client's own TLS 1.3 session is never re-wrapped.
+        config.linkerd.io/skip-inbound-ports: "8443"
+        config.linkerd.io/skip-outbound-ports: "8443"
+        # TCP 8000 stays meshed and unannotated: Linkerd detects HTTP/1.1 + h2c
+        # there and reports L7 metrics for topic 5.
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        # emptyDir volumes are chowned to this GID so the non-root user can write
+        # the rendered hypercorn.toml and the fallback certificate.
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          # Tag is managed by Flux image automation; see the `images:` block with
+          # $imagepolicy setters in apps/homelab/kustomization.yaml.
+          # NOTE: replace `andreibe24` with the real GitHub org.
+          image: ghcr.io/andreibe24/webapp-backend:sha-1730000000-0000000
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            - name: quic
+              containerPort: 8443
+              protocol: UDP
+          envFrom:
+            - configMapRef:
+                name: webapp-backend-env
+            - secretRef:
+                # Provided by topic 3's secret mechanism; optional so the app boots
+                # (with an ephemeral SECRET_KEY) before that lands.
+                name: webapp-backend-secrets
+                optional: true
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          # Probes use the plaintext TCP listener: kubelet cannot probe UDP, and
+          # probing the TLS port would need `scheme: HTTPS` plus a cert the kubelet
+          # does not validate anyway.
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 3
+            failureThreshold: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources: # patched per cluster in apps/homelab/
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/webapp/tls
+              readOnly: true
+            - name: runtime
+              mountPath: /var/run/webapp
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tls
+          secret:
+            # Issued by cert-manager (certificate.yaml). Optional so a missing
+            # Issuer degrades to the entrypoint's self-signed cert instead of
+            # wedging the pod in ContainerCreating.
+            secretName: webapp-backend-tls
+            optional: true
+            defaultMode: 0444
+        - name: runtime
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: webapp
+                    app.kubernetes.io/component: backend
+      terminationGracePeriodSeconds: 30

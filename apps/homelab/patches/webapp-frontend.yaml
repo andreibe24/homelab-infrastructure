@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-frontend
+  namespace: webapp
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: nginx
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              memory: 128Mi

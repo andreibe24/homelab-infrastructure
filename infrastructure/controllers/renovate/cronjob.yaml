@@ -1,0 +1,117 @@
+# Renovate self-hosted CronJob.
+#
+# Renovate is stateless: each run clones the repo over HTTPS, resolves
+# dependencies against public registries, and opens/updates pull requests on
+# GitHub. It never talks to the Kubernetes API and never applies anything to the
+# cluster -- Flux does that, and only after a human merges the PR to `main`.
+#
+# Image tag is pinned on purpose: the `kubernetes` manager in /renovate.json
+# scans infrastructure/**.yaml, so Renovate proposes its own upgrades here.
+# (ghcr.io/renovatebot/renovate is the same image as Docker Hub's
+# renovate/renovate; GHCR is used to avoid Docker Hub pull rate limits.)
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: renovate
+  namespace: renovate
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/part-of: homelab
+spec:
+  # Once a day, 02:00 local time. Matches the `schedule` window
+  # ("after 2am and before 4am", timezone Europe/Bucharest) in /renovate.json:
+  # if the two disagree, Renovate starts, finds itself outside its schedule and
+  # does nothing.
+  schedule: "0 2 * * *"
+  timeZone: Europe/Bucharest
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      ttlSecondsAfterFinished: 86400
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: renovate
+        spec:
+          serviceAccountName: renovate
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 12021
+            runAsGroup: 0
+            fsGroup: 0
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: renovate
+              image: ghcr.io/renovatebot/renovate:44.83.0
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: RENOVATE_PLATFORM
+                  value: github
+                - name: RENOVATE_ENDPOINT
+                  value: https://api.github.com/
+                # Repositories this run is allowed to touch. Replace <github-org>
+                # with the GitHub owner of this repository.
+                - name: RENOVATE_REPOSITORIES
+                  value: '["<github-org>/homelab-infrastructure"]'
+                # Fine-grained PAT, populated via SOPS (see secret.sops.yaml.example):
+                # scope it to THIS repository only, with
+                #   Contents: read & write        (push the update branches)
+                #   Pull requests: read & write   (open/update/automerge the PRs)
+                # Nothing else -- no admin, no workflow, no org scopes.
+                - name: RENOVATE_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: renovate-token
+                      key: RENOVATE_TOKEN
+                # Optional: a second token used only to read changelogs/release
+                # notes from other public GitHub repos (avoids rate limiting).
+                - name: GITHUB_COM_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: renovate-token
+                      key: GITHUB_COM_TOKEN
+                      optional: true
+                # This repo already has /renovate.json committed, so skip the
+                # onboarding PR and fail loudly if the config ever disappears.
+                - name: RENOVATE_ONBOARDING
+                  value: "false"
+                - name: RENOVATE_REQUIRE_CONFIG
+                  value: required
+                - name: RENOVATE_GIT_AUTHOR
+                  value: "renovate[bot] <renovate@homelab.local>"
+                - name: RENOVATE_BASE_DIR
+                  value: /tmp/renovate
+                - name: LOG_LEVEL
+                  value: info
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 512Mi
+                limits:
+                  # No CPU limit on purpose (avoid throttling a short batch job);
+                  # memory is capped because Renovate's Node heap can grow while
+                  # resolving npm lockfiles.
+                  memory: 2Gi
+              volumeMounts:
+                # readOnlyRootFilesystem: true, so every path Renovate writes to
+                # (git clones, caches, lockfile installs) must be a volume.
+                - name: workdir
+                  mountPath: /tmp
+          volumes:
+            - name: workdir
+              emptyDir:
+                sizeLimit: 4Gi

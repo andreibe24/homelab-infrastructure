@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Cluster overlay for "homelab" -- the path reconciled by Kustomization/apps
+# (clusters/homelab/apps.yaml).
+#
+# Reference bases from ../base/<app> and apply cluster-specific patches here
+# (replica counts, hostnames, resource limits, image tags managed by Flux image
+# automation markers).
+resources:
+  - ../base/webapp # topic 4 (cd-webapp)
+  # Flux image-reflector / image-automation CRs (flux-system namespace). They live
+  # in the overlay, not the base, because they encode cluster-specific git push
+  # behaviour and the path they rewrite (./apps/homelab).
+  - image-automation.yaml
+
+patches:
+  - path: patches/webapp-backend.yaml
+    target:
+      kind: Deployment
+      name: webapp-backend
+  - path: patches/webapp-frontend.yaml
+    target:
+      kind: Deployment
+      name: webapp-frontend
+  - path: patches/webapp-edge-ip.yaml
+
+# Image tags for this cluster.
+#
+# The `# {"$imagepolicy": ...}` setters are what image-automation-controller
+# rewrites (ImageUpdateAutomation/webapp scans ./apps/homelab with the `Setters`
+# strategy). Keeping them here means apps/base/ never carries a cluster's tag.
+#
+# NOTE: replace `andreibe24` with the real GitHub org -- it must match the
+# ImageRepository objects in image-automation.yaml and topic 3's build workflow.
+images:
+  - name: ghcr.io/andreibe24/webapp-backend
+    newName: ghcr.io/andreibe24/webapp-backend # {"$imagepolicy": "flux-system:webapp-backend:name"}
+    newTag: sha-1730000000-0000000 # {"$imagepolicy": "flux-system:webapp-backend:tag"}
+  - name: ghcr.io/andreibe24/webapp-frontend
+    newName: ghcr.io/andreibe24/webapp-frontend # {"$imagepolicy": "flux-system:webapp-frontend:name"}
+    newTag: sha-1730000000-0000000 # {"$imagepolicy": "flux-system:webapp-frontend:tag"}

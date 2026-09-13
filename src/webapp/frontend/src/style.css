@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 40rem;
+  padding: 2rem;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid currentColor;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.status.ok {
+  color: #128a3c;
+}
+
+.status.error {
+  color: #b3261e;
+}
+
+.hint {
+  opacity: 0.75;
+  font-size: 0.9rem;
+}

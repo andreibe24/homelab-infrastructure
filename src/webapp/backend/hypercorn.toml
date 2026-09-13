@@ -1,0 +1,40 @@
+# Hypercorn configuration for the Django backend.
+#
+# Three listeners share one ASGI application:
+#
+#   insecure_bind  TCP 8000  plaintext HTTP/1.1 + h2c  -> in-mesh traffic (Linkerd
+#                                                         adds mTLS), kubelet probes
+#                                                         and Prometheus /metrics
+#   bind           TCP 8443  TLS HTTP/1.1 + h2         -> edge fallback when a client
+#                                                         or network cannot do QUIC
+#   quic_bind      UDP 8443  QUIC / HTTP/3 (aioquic)   -> the HTTP/3 listener
+#
+# `certfile`/`keyfile` point at the cert-manager Certificate mounted from the
+# `webapp-backend-tls` Secret. QUIC mandates TLS 1.3, so the cert is not optional;
+# entrypoint.sh falls back to a generated self-signed cert if the mount is absent.
+#
+# The literal default values below are rewritten at container start by
+# entrypoint.sh when TLS_CERTFILE / TLS_KEYFILE / HTTP3_ALT_SVC are set.
+
+bind = ["0.0.0.0:8443"]
+insecure_bind = ["0.0.0.0:8000"]
+quic_bind = ["0.0.0.0:8443"]
+
+certfile = "/etc/webapp/tls/tls.crt"
+keyfile = "/etc/webapp/tls/tls.key"
+
+# TCP/TLS ALPN only. The QUIC listener always negotiates the h3 ALPN identifiers
+# that aioquic's H3_ALPN provides; it is not configurable here.
+alpn_protocols = ["h2", "http/1.1"]
+
+# Advertise HTTP/3 on the *externally* reachable UDP port (the LoadBalancer port),
+# not on the container port. An empty list would make Hypercorn auto-generate
+# `alt-svc: h3=":8443"`, which is wrong outside the cluster.
+alt_svc_headers = ['h3=":443"; ma=86400']
+
+workers = 1
+accesslog = "-"
+errorlog = "-"
+loglevel = "INFO"
+graceful_timeout = 10
+keep_alive_timeout = 30

@@ -1,0 +1,97 @@
+# Least-privilege in-cluster access for runner pods.
+#
+# Baseline: the runner pods get NO Kubernetes rights at all. In `containerMode:
+# kubernetes` the chart already creates a ServiceAccount
+# (`homelab-runners-gha-rs-kube-mode`) plus a Role in arc-runners scoped to what
+# the container hooks need (pods, pods/exec, pods/log, jobs, secrets) -- that is
+# managed by the chart, do not duplicate it here.
+#
+# Everything below is *additional*, deliberately narrow, and EXAMPLE-GRADE: the
+# real deployment rights for the webapp belong to topic 4 (cd-webapp) and, in the
+# GitOps model, should not be needed at all -- Flux pulls, CI never pushes to the
+# cluster. Keep these rules only if a workflow genuinely runs `kubectl` (e.g. a
+# post-deploy smoke test).
+#
+# Note how this differs from the classic VM runner described in
+# development-environment/todo.md: there the `github` user held passwordless sudo
+# for `nginx -s reload` and write access to /websites/my-website, so anyone who
+# stole the runner identity inherited those rights permanently. Here the rights
+# are (a) namespaced, (b) verb- and resourceName-limited, (c) attached to a pod
+# that exists only for the duration of one job.
+---
+# Read-only introspection inside the runners' own namespace: enough for
+# `kubectl get pods` style debugging from a workflow, nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: homelab-runners-selfns-read
+  namespace: arc-runners
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: ci
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: homelab-runners-selfns-read
+  namespace: arc-runners
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: ci
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: homelab-runners-selfns-read
+subjects:
+  - kind: ServiceAccount
+    # Created by the gha-runner-scale-set chart from the release name
+    # "homelab-runners" -> "<release>-gha-rs-kube-mode".
+    name: homelab-runners-gha-rs-kube-mode
+    namespace: arc-runners
+---
+# EXAMPLE of a cross-namespace grant: let a CI smoke test observe (never mutate)
+# the webapp that Flux deploys. Note there is no create/update/patch/delete, no
+# `secrets`, and no wildcard: a stolen runner identity cannot deploy, cannot read
+# application credentials, and cannot escalate.
+#
+# If a workflow ever needs to force a rollout (discouraged -- prefer Flux image
+# automation from topic 4), add a SECOND rule limited to
+#   apiGroups: ["apps"], resources: ["deployments"], verbs: ["patch"],
+#   resourceNames: ["webapp-frontend"]
+# and nothing more.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-webapp-smoketest
+  namespace: webapp
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: ci
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-webapp-smoketest
+  namespace: webapp
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: ci
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-webapp-smoketest
+subjects:
+  - kind: ServiceAccount
+    name: homelab-runners-gha-rs-kube-mode
+    namespace: arc-runners

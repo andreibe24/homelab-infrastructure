@@ -1,0 +1,61 @@
+# Shared cluster-wide issuers, owned by topic 2 (linkerd-mtls).
+#
+# These exist so that other topics (webapp TLS in topic 4, a Grafana ingress in
+# topic 5) can request certificates with a two-line `issuerRef` instead of
+# standing up a second PKI. They are intentionally separate from the Linkerd
+# trust anchor: mesh identity and application/ingress TLS should not share a CA.
+#
+# For a publicly reachable endpoint, add an ACME ClusterIssuer here instead of
+# using the self-signed CA below.
+---
+# Bootstrap issuer: only ever used to sign the homelab root CA below.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned
+  labels:
+    app.kubernetes.io/part-of: homelab
+spec:
+  selfSigned: {}
+---
+# Homelab root CA (10 years). Its Secret lives in the cert-manager namespace,
+# which is the namespace cert-manager reads ClusterIssuer secrets from
+# (`--cluster-resource-namespace`, defaults to the release namespace).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-root-ca
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/part-of: homelab
+spec:
+  secretName: homelab-root-ca
+  isCA: true
+  commonName: homelab-root-ca
+  duration: 87600h
+  renewBefore: 8760h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    encoding: PKCS8
+    rotationPolicy: Never
+  usages:
+    - cert sign
+    - crl sign
+    - digital signature
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+# The issuer every other topic should reference:
+#   issuerRef: {name: homelab-ca, kind: ClusterIssuer, group: cert-manager.io}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: homelab-ca
+  labels:
+    app.kubernetes.io/part-of: homelab
+spec:
+  ca:
+    secretName: homelab-root-ca

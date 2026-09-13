@@ -1,0 +1,123 @@
+# Flux image automation for the webapp (topic 4 -- cd-webapp).
+#
+# Pipeline:
+#   topic 3's .github/workflows/build-images.yaml  --push-->  GHCR
+#   image-reflector-controller  scans the repo  (ImageRepository)
+#   image-reflector-controller  picks a tag     (ImagePolicy)
+#   image-automation-controller commits the new tag back to git
+#                               (ImageUpdateAutomation -> ./apps/homelab)
+#   source/kustomize controllers deploy the commit
+#
+# BOOTSTRAP REQUIREMENT: both controllers are *optional* Flux components. Flux must
+# have been bootstrapped with
+#   --components-extra=image-reflector-controller,image-automation-controller
+# (already documented in clusters/homelab/flux-system/README.md). Without them these
+# CRs are accepted only if their CRDs exist -- if the cluster was bootstrapped
+# without the extras, `flux bootstrap` must be re-run with the flag, otherwise the
+# whole `apps` Kustomization fails to apply on unknown kinds.
+#
+# NOTE: replace `andreibe24` with the real GitHub org/owner in the image URLs below.
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: webapp-backend
+  namespace: flux-system
+spec:
+  image: ghcr.io/andreibe24/webapp-backend
+  interval: 5m
+  provider: generic
+  # GHCR packages that are not public need a dockerconfigjson Secret in
+  # flux-system (the same one the cluster uses as an imagePullSecret):
+  # secretRef:
+  #   name: ghcr-auth
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: webapp-frontend
+  namespace: flux-system
+spec:
+  image: ghcr.io/andreibe24/webapp-frontend
+  interval: 5m
+  provider: generic
+  # secretRef:
+  #   name: ghcr-auth
+---
+# TAG CONTRACT WITH TOPIC 3
+#
+# CI publishes `sha-<unix-timestamp>-<short-sha>` on every push to main, e.g.
+# `sha-1730000000-1a2b3c4`. A monotonically increasing numeric field is extracted
+# and ordered numerically, which is deterministic (git short SHAs are not sortable
+# and would make "latest" meaningless).
+#
+# If topic 3 also publishes semver release tags and releases become the deployment
+# trigger, swap the `filterTags`/`policy` block for:
+#   policy:
+#     semver:
+#       range: ">=1.0.0"
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: webapp-backend
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: webapp-backend
+  filterTags:
+    pattern: '^sha-(?P<ts>\d+)-[0-9a-f]{7,40}$'
+    extract: "$ts"
+  policy:
+    numerical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: webapp-frontend
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: webapp-frontend
+  filterTags:
+    pattern: '^sha-(?P<ts>\d+)-[0-9a-f]{7,40}$'
+    extract: "$ts"
+  policy:
+    numerical:
+      order: asc
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: webapp
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@users.noreply.github.com
+      messageTemplate: |
+        chore(webapp): update image tags
+
+        {{ range .Changed.Changes -}}
+        - {{ .OldValue }} -> {{ .NewValue }} ({{ .Resource.Kind }}/{{ .Resource.Name }})
+        {{ end -}}
+    push:
+      branch: main
+      # For review-before-deploy, push to a dedicated branch instead and let a PR
+      # gate production:
+      #   branch: flux-image-updates
+  update:
+    # Only the overlay is rewritten: the $imagepolicy setters live in the `images:`
+    # block of apps/homelab/kustomization.yaml, keeping apps/base/ free of
+    # cluster-specific tags.
+    path: ./apps/homelab
+    strategy: Setters

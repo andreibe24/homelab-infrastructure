@@ -1,0 +1,79 @@
+# nginx runtime config template for the Vite SPA.
+#
+# Rendered at container start by the official nginx entrypoint
+# (/docker-entrypoint.d/20-envsubst-on-templates.sh): every file in
+# /etc/nginx/templates/*.template is passed through `envsubst` into
+# $NGINX_ENVSUBST_OUTPUT_DIR (default /etc/nginx/conf.d).
+#
+# NGINX_ENVSUBST_FILTER restricts substitution to our own variables so nginx's
+# runtime variables ($uri, $host, ...) survive untouched.
+#
+# Variables:
+#   BACKEND_HOST  - Django/Hypercorn Service DNS name
+#   BACKEND_PORT  - its plaintext TCP port (8000; mTLS is added by Linkerd)
+#   ALT_SVC       - HTTP/3 advertisement, e.g.  h3=":443"; ma=86400
+#   SPA_API_ORIGIN - optional CSP connect-src entry for the HTTP/3 API origin
+
+server {
+    listen       8080;
+    listen       [::]:8080;
+    http2        on;
+    server_name  _;
+
+    root  /usr/share/nginx/html;
+    index index.html;
+
+    # TLS is terminated by ingress-nginx in front of this pod, so no ssl_* here.
+
+    gzip              on;
+    gzip_vary         on;
+    gzip_comp_level   6;
+    gzip_min_length   1024;
+    gzip_proxied      any;
+    gzip_types        text/plain text/css text/javascript application/javascript
+                      application/json application/xml image/svg+xml application/wasm;
+
+    # Advertise the HTTP/3 endpoint. The SPA itself is only reachable over TCP via
+    # ingress-nginx (which does not speak QUIC), so this header exists to point
+    # HTTP/3-capable clients at the API origin and to document the contract.
+    add_header Alt-Svc "${ALT_SVC}" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location = /healthz {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Same-origin API path: plain TCP to the backend's in-mesh listener. Linkerd
+    # provides mTLS on this hop; HTTP/3 is NOT used here (it terminates at the
+    # backend's own UDP listener, reachable directly at $SPA_API_ORIGIN).
+    location /api/ {
+        proxy_pass              http://${BACKEND_HOST}:${BACKEND_PORT};
+        proxy_http_version      1.1;
+        proxy_set_header        Host $host;
+        proxy_set_header        X-Real-IP $remote_addr;
+        proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header        X-Forwarded-Proto $scheme;
+        proxy_connect_timeout   5s;
+        proxy_read_timeout      30s;
+        proxy_buffering         off;
+    }
+
+    # Immutable hashed assets emitted by Vite.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # SPA history fallback.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+}

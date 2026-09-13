@@ -1,0 +1,8 @@
+# Pinned exactly so Renovate (topic 6) proposes updates as reviewable PRs.
+Django==5.1.6
+# hypercorn[h3] pulls aioquic; aioquic is pinned explicitly as well because the
+# QUIC/HTTP-3 stack is the core of this service.
+hypercorn[h3]==0.17.3
+aioquic==1.2.0
+# Exposes /metrics for topic 5's ServiceMonitor.
+django-prometheus==2.3.1

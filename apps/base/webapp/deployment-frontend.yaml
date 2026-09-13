@@ -1,0 +1,106 @@
+# Vite SPA served by nginx. TLS is terminated by ingress-nginx in front of it, so
+# this pod only listens on plaintext TCP 8080 (meshed by Linkerd).
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-frontend
+  labels:
+    app.kubernetes.io/name: webapp
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 1 # patched per cluster in apps/homelab/
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webapp
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webapp
+        app.kubernetes.io/component: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        # nginx (uid 101) must be able to write the rendered config, its pid file
+        # and its caches, all of which are emptyDir mounts below.
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          # NOTE: replace `andreibe24` with the real GitHub org.
+          image: ghcr.io/andreibe24/webapp-frontend:sha-1730000000-0000000
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: webapp-frontend-env
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 2
+          resources: # patched per cluster in apps/homelab/
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: nginx-templates
+              mountPath: /etc/nginx/templates
+              readOnly: true
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+      volumes:
+        - name: nginx-templates
+          configMap:
+            name: webapp-nginx-config
+            items:
+              - key: default.conf.template
+                path: default.conf.template
+        - name: nginx-conf
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: webapp
+                    app.kubernetes.io/component: frontend
+      terminationGracePeriodSeconds: 20

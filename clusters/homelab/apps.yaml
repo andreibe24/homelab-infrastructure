@@ -1,0 +1,31 @@
+# Cluster: homelab -- application layer entrypoint.
+#
+# Applications live in apps/base/<app> (environment-agnostic manifests) and are
+# composed for this cluster by the overlay apps/homelab/, which is the path
+# reconciled below. Keeping the overlay indirection now means a second cluster
+# (e.g. apps/staging) can be added later without touching the bases.
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: apps
+  namespace: flux-system
+spec:
+  dependsOn:
+    # Apps must not be applied before the mesh / ingress / monitoring CRDs exist,
+    # otherwise Linkerd injection and ServiceMonitors silently do nothing.
+    - name: infra-configs
+  interval: 10m
+  retryInterval: 1m
+  timeout: 10m
+  path: ./apps/homelab
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  # Topic 4 (cd-webapp) may add:
+  # postBuild:
+  #   substituteFrom:
+  #     - kind: ConfigMap
+  #       name: cluster-vars

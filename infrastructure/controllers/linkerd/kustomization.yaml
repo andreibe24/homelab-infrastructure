@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# The `linkerd` and `linkerd-viz` Namespaces (with their injection annotations
+# and the `config.linkerd.io/admission-webhooks: disabled` label) are declared in
+# infrastructure/namespaces/namespaces.yaml — never here.
+resources:
+  - helmrelease-crds.yaml
+  - helmrelease-control-plane.yaml
+  - helmrelease-viz.yaml
+  # Reconciles infrastructure/configs/linkerd/pki during the controllers stage;
+  # see the header of this file for the bootstrap-ordering rationale.
+  - kustomization-pki.yaml

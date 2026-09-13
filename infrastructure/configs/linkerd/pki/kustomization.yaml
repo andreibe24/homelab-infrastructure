@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Reconciled by Kustomization/linkerd-pki (declared in
+# infrastructure/controllers/linkerd/kustomization-pki.yaml) so that the mesh PKI
+# exists while the controllers stage is still converging.
+#
+# Do NOT add this directory to ../kustomization.yaml: infra-configs would then
+# fight Kustomization/linkerd-pki for ownership of the same objects.
+resources:
+  - trust-anchor.yaml
+  - identity-issuer.yaml

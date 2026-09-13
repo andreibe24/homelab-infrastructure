@@ -1,0 +1,23 @@
+# Cluster-specific tuning for the webapp backend (topic 4).
+# Strategic-merge patch: only the fields below are overlaid onto the base.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-backend
+  namespace: webapp
+spec:
+  # Two replicas: a rolling update must never drop the QUIC listener, and the
+  # single-node homelab can still schedule both (anti-affinity is "preferred").
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: backend
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              # No CPU limit on purpose: throttling a QUIC event loop shows up as
+              # handshake timeouts. Memory is capped.
+              memory: 512Mi

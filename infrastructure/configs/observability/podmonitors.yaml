@@ -1,0 +1,163 @@
+# PodMonitors — Linkerd proxies (topic 2) and ARC controller/listeners/runners
+# (topic 3).
+#
+# Like the ServiceMonitors, these are label-selector based and inert until those
+# workloads exist. Port names follow the Linkerd defaults; topic 2 only has to
+# confirm them (`linkerd-admin` on the proxy, `admin-http` on control-plane
+# containers) — they are stable across stable/edge releases.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: linkerd-control-plane
+  namespace: linkerd
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: observability
+spec:
+  # destination / identity / proxy-injector expose their own metrics on the
+  # container port named `admin-http` (9990/9996/9995 depending on the component).
+  selector:
+    matchLabels:
+      linkerd.io/control-plane-ns: linkerd
+  namespaceSelector:
+    matchNames:
+      - linkerd
+      - linkerd-viz
+  podMetricsEndpoints:
+    - port: admin-http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_container_name]
+          targetLabel: component
+          action: replace
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: linkerd-proxy
+  namespace: linkerd
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: observability
+spec:
+  # The data plane: every injected pod runs a `linkerd-proxy` container whose
+  # admin port (4191, named `linkerd-admin`) serves the proxy metrics —
+  # request_total / response_total / response_latency_ms_bucket / tcp_open_total,
+  # all carrying `tls="true"|"no_identity"|...` which is how the
+  # "mTLS is actually on" and "proxy down" alerts in
+  # prometheusrule-platform.yaml are evaluated.
+  #
+  # An empty selector matches every pod in the namespaces below; the
+  # `linkerd.io/control-plane-ns` label relabeling drops non-meshed pods, and pods
+  # without the port simply produce no target.
+  selector:
+    matchExpressions:
+      - key: linkerd.io/control-plane-ns
+        operator: Exists
+  namespaceSelector:
+    matchNames:
+      - webapp
+      - linkerd
+      - linkerd-viz
+      - observability
+  podMetricsEndpoints:
+    - port: linkerd-admin
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_container_name]
+          action: keep
+          regex: linkerd-proxy
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+          action: replace
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+          action: replace
+        - action: labeldrop
+          regex: __meta_kubernetes_pod_label_pod_template_hash
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: arc-controller
+  namespace: arc-systems
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: observability
+spec:
+  # Topic 3's gha-runner-scale-set-controller sets
+  # `metrics.controllerManagerAddr: ":8080"` in its HelmRelease values, which makes
+  # the controller-manager serve controller-runtime + gha_* metrics on pod port
+  # 8080. `targetPort` is used instead of `port` on purpose: the container port is
+  # not named, and this way the monitor works whether or not the chart also creates
+  # a metrics Service.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gha-rs-controller
+  namespaceSelector:
+    matchNames:
+      - arc-systems
+  podMetricsEndpoints:
+    - targetPort: 8080
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: arc-runner-listener
+  namespace: arc-systems
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: observability
+spec:
+  # One listener pod per AutoscalingRunnerSet (`metrics.listenerAddr: ":8080"`,
+  # `listenerEndpoint: "/metrics"`). These pods have no Service, so a PodMonitor is
+  # the only way to scrape them. Source of gha_assigned_jobs / gha_running_jobs /
+  # gha_registered_runners — i.e. "is CI actually picking up jobs?".
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: runner-scale-set-listener
+  namespaceSelector:
+    matchNames:
+      - arc-systems
+      - arc-runners
+  podMetricsEndpoints:
+    - targetPort: 8080
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: arc-runners
+  namespace: arc-runners
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: observability
+spec:
+  # Ephemeral runner pods created by topic 3's AutoscalingRunnerSet. The stock
+  # runner image exposes no metrics, so this only produces targets if topic 3 adds
+  # a sidecar/exporter with a container port named `metrics` (e.g. BuildKit's
+  # `--debugaddr` endpoint). Scrape interval is short because these pods are
+  # short-lived; `honorLabels` keeps whatever job/instance the exporter reports.
+  selector:
+    matchExpressions:
+      - key: actions.github.com/scale-set-name
+        operator: Exists
+  namespaceSelector:
+    matchNames:
+      - arc-runners
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+      honorLabels: true

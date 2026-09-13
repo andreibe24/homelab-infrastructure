@@ -8,9 +8,7 @@ Have communication encrypted between application pods.
 
 For 2 identities, mutual means that each part verifies the tls cert of the other part.
 
-# CI with self-hosted internal Argo Workflows
-
-## github.com code <- https outbound <- k8s cronjob poller -> new commit -> argo workflow ...
+# CI with self-hosted runners
 
 ## OR just register github runners as you need ONLY outbound connection from runner to github.com 
 

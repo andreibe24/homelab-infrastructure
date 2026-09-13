@@ -1,0 +1,100 @@
+# Cluster: homelab -- infrastructure layer entrypoint.
+#
+# Reconciled by Kustomization/flux-system (created by `flux bootstrap`), which
+# renders every YAML file in clusters/homelab/.
+#
+# The infrastructure layer is split into four ordered stages so that CRDs and
+# controllers always exist before the objects that depend on them:
+#
+#   infra-namespaces -> infra-sources -> infra-controllers -> infra-configs
+#
+# Per-topic agents add their own directories under infrastructure/controllers/<topic>
+# and infrastructure/configs/<topic> and reference them from the corresponding
+# kustomization.yaml; they must NOT create extra Flux Kustomizations here unless a
+# topic genuinely needs its own reconciliation lifecycle (e.g. a different interval,
+# health checks, or decryption settings).
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-namespaces
+  namespace: flux-system
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  path: ./infrastructure/namespaces
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-sources
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-namespaces
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  path: ./infrastructure/sources
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-controllers
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-sources
+  interval: 1h
+  retryInterval: 2m
+  timeout: 15m
+  path: ./infrastructure/controllers
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  # Topics 2/3/5/6 install their controllers here (HelmRelease objects).
+  # `wait: true` makes infra-configs wait until the HelmReleases are Ready,
+  # which is what guarantees CRDs (Linkerd, ARC, Prometheus Operator) exist
+  # before infra-configs applies custom resources that use them.
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infra-configs
+  namespace: flux-system
+spec:
+  dependsOn:
+    - name: infra-controllers
+  interval: 1h
+  retryInterval: 2m
+  timeout: 10m
+  path: ./infrastructure/configs
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  # Custom resources that require the controllers above:
+  #   cert-manager Issuer/Certificate (Linkerd trust anchor + identity issuer)
+  #   ARC AutoscalingRunnerSet / RunnerDeployment
+  #   ServiceMonitor / PrometheusRule / Grafana dashboard ConfigMaps
+  #   Renovate CronJob + RBAC
+  #
+  # Once SOPS is in use (topic 3 decision), add:
+  # decryption:
+  #   provider: sops
+  #   secretRef:
+  #     name: sops-age

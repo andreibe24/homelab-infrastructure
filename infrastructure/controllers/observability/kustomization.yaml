@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Topic 5 — observability controllers.
+#
+# Only the HelmRelease lives here; every custom resource that needs the Prometheus
+# Operator CRDs (ServiceMonitor, PodMonitor, PrometheusRule, AlertmanagerConfig,
+# dashboard ConfigMaps) is in infrastructure/configs/observability/, which Flux
+# applies in a later stage — see clusters/homelab/infrastructure.yaml.
+#
+# The Namespace `observability` is owned by the cluster-bootstrap topic
+# (infrastructure/namespaces/namespaces.yaml) and is deliberately NOT declared here.
+resources:
+  - helmrelease-kube-prometheus-stack.yaml
+# secrets.example.yaml is a template only — it is NOT listed above on purpose.
+# Copy it, fill it in, encrypt it (SOPS/SealedSecrets, topic 3's choice) and add
+# the encrypted file to this list.

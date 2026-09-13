@@ -1,6 +1,9 @@
 [tools]
 vim = "latest"
 jq = "latest"
+gh = "latest"
+node = "latest"
+"npm:@github/copilot" = "latest"
 
 [hooks]
 enter = "mise install" # run the command whenever you cd into a project

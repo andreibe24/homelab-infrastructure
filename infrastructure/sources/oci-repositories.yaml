@@ -1,0 +1,16 @@
+# OCI-hosted Helm charts (type: oci). Kept separate from the HTTP repositories
+# purely for readability -- same object kind, same namespace, same consumers.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: actions-runner-controller
+  namespace: flux-system
+spec:
+  type: oci
+  interval: 12h
+  url: oci://ghcr.io/actions/actions-runner-controller-charts
+  # Charts: gha-runner-scale-set-controller, gha-runner-scale-set (topic 3).
+  # These are public; if the registry ever requires auth, add:
+  #   secretRef:
+  #     name: ghcr-auth   # dockerconfigjson Secret in flux-system

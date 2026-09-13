@@ -1,0 +1,74 @@
+# linkerd-viz — the on-cluster dashboard plus tap/metrics-api.
+#
+# Optional, but it is the fastest way to *see* mTLS working:
+#   linkerd viz edge deployment -n webapp
+# shows the client/server identities of every meshed connection.
+#
+# Chart 30.12.11 == stable-2.14.10, i.e. it must stay in lock-step with
+# linkerd-control-plane 1.16.11. Renovate must bump both together.
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: linkerd-viz
+  namespace: linkerd-viz
+spec:
+  interval: 1h
+  timeout: 10m
+  releaseName: linkerd-viz
+  dependsOn:
+    - name: linkerd-control-plane
+      namespace: linkerd
+  chart:
+    spec:
+      chart: linkerd-viz
+      version: 30.12.11
+      sourceRef:
+        kind: HelmRepository
+        name: linkerd
+        namespace: flux-system
+      interval: 12h
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    linkerdNamespace: linkerd
+    clusterDomain: cluster.local
+
+    # Decision: keep the small, viz-scoped Prometheus bundled with the chart.
+    # It ships the exact scrape config and recording rules the dashboard needs
+    # and keeps this topic independent of topic 5's rollout.
+    #
+    # To hand metrics over to topic 5's kube-prometheus-stack instead, swap the
+    # block below for:
+    #   prometheus:
+    #     enabled: false
+    #   prometheusUrl: http://kube-prometheus-stack-prometheus.observability.svc.cluster.local:9090
+    # and make topic 5 add Linkerd's scrape job + recording rules, otherwise
+    # `linkerd viz stat` returns empty results.
+    prometheus:
+      enabled: true
+      args:
+        storage.tsdb.path: /data
+        storage.tsdb.retention.time: 6h
+        config.file: /etc/prometheus/prometheus.yml
+      resources:
+        cpu:
+          request: 100m
+        memory:
+          request: 256Mi
+          limit: 1Gi
+
+    dashboard:
+      replicas: 1
+      # The dashboard is reachable with `linkerd viz dashboard` (port-forward).
+      # If it is ever exposed through an Ingress/HTTPRoute, set
+      # `enforcedHostRegexp` to the external hostname to keep the DNS-rebinding
+      # protection working.
+      enforcedHostRegexp: ""
+
+    # Single node: one replica of each component, no anti-affinity.
+    enablePodAntiAffinity: false

@@ -1,0 +1,119 @@
+# Linkerd control plane — the thing that actually issues workload certificates
+# and turns every meshed pod-to-pod connection into mTLS.
+#
+# PKI wiring (see ../../configs/linkerd/pki/ and ./README.md):
+#
+#   Issuer/linkerd-selfsigned-issuer  (self-signed)
+#     └── Certificate/linkerd-trust-anchor  -> Secret/linkerd-trust-anchor   (root CA, 10y)
+#           ├── consumed below via `valuesFrom` as `identityTrustAnchorsPEM`
+#           └── Issuer/linkerd-trust-anchor (ca)
+#                 └── Certificate/linkerd-identity-issuer -> Secret/linkerd-identity-issuer
+#                       (intermediate CA, 48h, renewed after 23h by cert-manager)
+#
+# `identity.issuer.scheme: kubernetes.io/tls` tells the chart NOT to template its
+# own issuer Secret and to read the cert-manager-managed `kubernetes.io/tls`
+# Secret (`tls.crt` / `tls.key`) instead — that is what makes issuer rotation a
+# cert-manager concern rather than a git commit.
+#
+# Chart 1.16.11 == linkerd stable-2.14.10 (the last release of the free `stable`
+# channel). Renovate (topic 6) proposes bumps; verify chart/appVersion pairing at
+# https://helm.linkerd.io/stable/index.yaml before merging.
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: linkerd-control-plane
+  namespace: linkerd
+spec:
+  interval: 1h
+  timeout: 10m
+  releaseName: linkerd-control-plane
+  dependsOn:
+    # CRDs first...
+    - name: linkerd-crds
+      namespace: linkerd
+    # ...and cert-manager, because the trust anchor Secret referenced by
+    # `valuesFrom` below is produced by a cert-manager Certificate. The
+    # Certificates themselves are reconciled by Kustomization/linkerd-pki
+    # (see ./kustomization-pki.yaml).
+    - name: cert-manager
+      namespace: cert-manager
+  chart:
+    spec:
+      chart: linkerd-control-plane
+      version: 1.16.11
+      sourceRef:
+        kind: HelmRepository
+        name: linkerd
+        namespace: flux-system
+      interval: 12h
+  install:
+    remediation:
+      retries: 5
+  upgrade:
+    remediation:
+      retries: 5
+  # The trust anchor's public certificate (NOT its key) becomes the
+  # `linkerd-identity-trust-roots` ConfigMap that every proxy mounts and uses to
+  # validate its peer. Until Kustomization/linkerd-pki has created the Secret,
+  # this HelmRelease stays in "values dependency not ready" and retries.
+  valuesFrom:
+    - kind: Secret
+      name: linkerd-trust-anchor
+      valuesKey: tls.crt
+      targetPath: identityTrustAnchorsPEM
+  values:
+    identity:
+      # `false`: the chart owns the linkerd-identity-trust-roots ConfigMap and
+      # fills it from identityTrustAnchorsPEM above. Set to `true` only if
+      # trust-manager is introduced to distribute the bundle instead.
+      externalCA: false
+      issuer:
+        # cert-manager-managed kubernetes.io/tls Secret, rotated every ~48h.
+        scheme: kubernetes.io/tls
+        # Lifetime of the leaf certificates the identity service hands to proxies.
+        issuanceLifetime: 24h0m0s
+        clockSkewAllowance: 20s
+
+    # Single-node homelab: no HA (that would want 3 replicas + anti-affinity +
+    # PDBs, see the chart's values-ha.yaml). Revisit when the cluster grows.
+    controllerReplicas: 1
+    enablePodAntiAffinity: false
+    enablePodDisruptionBudget: false
+
+    # Do not phone home from a homelab.
+    disableHeartBeat: true
+
+    # Keep the pod/service CIDRs of a typical homelab (k3s/kubeadm defaults).
+    clusterNetworks: "10.0.0.0/8,100.64.0.0/10,172.16.0.0/12,192.168.0.0/16"
+
+    # Default policy for meshed pods. `all-unauthenticated` keeps unmeshed
+    # clients (kubelet probes, ingress controllers, Prometheus) working; mTLS is
+    # still used automatically whenever both peers are meshed. Tighten per
+    # workload with Server/AuthorizationPolicy in ../../configs/linkerd/.
+    proxy:
+      defaultInboundPolicy: all-unauthenticated
+      logLevel: warn,linkerd=info,trust_dns=error
+      resources:
+        cpu:
+          request: 20m
+        memory:
+          request: 32Mi
+          limit: 256Mi
+      # Proxy admin/metrics endpoint scraped by topic 5. Port 4191, container
+      # port name `linkerd-admin`; the proxy container is named `linkerd-proxy`.
+      ports:
+        admin: 4191
+
+    policyController:
+      logLevel: info
+
+    # Modest control-plane footprint for a single node.
+    destinationResources: &controllerResources
+      cpu:
+        request: 50m
+      memory:
+        request: 64Mi
+        limit: 512Mi
+    identityResources: *controllerResources
+    proxyInjectorResources: *controllerResources

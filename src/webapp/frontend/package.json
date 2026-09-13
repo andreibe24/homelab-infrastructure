@@ -1,0 +1,20 @@
+{
+  "name": "webapp-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Vite SPA for the homelab demo webapp; served by nginx, talks to the Django/HTTP3 backend.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "eslint": "9.18.0",
+    "jsdom": "25.0.1",
+    "vite": "6.0.11",
+    "vitest": "2.1.8"
+  }
+}

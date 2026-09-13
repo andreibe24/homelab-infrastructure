@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Topic 3 -- ci-self-hosted-runners (controller stage).
+#
+# Order inside the stage is expressed with HelmRelease `dependsOn`, not with the
+# resource list: the scale set waits for the ARC controller to be Ready because
+# it renders an AutoscalingRunnerSet CR owned by that controller.
+resources:
+  - helmrelease-controller.yaml
+  - helmrelease-runner-scale-set.yaml
+  # github-app-secret.stub.yaml is intentionally NOT listed: it is a placeholder.
+  # After encrypting it, add exactly one of:
+  # - github-app-secret.sops.yaml        # SOPS + age (needs decryption.secretRef)
+  # - github-app-sealedsecret.yaml       # sealed-secrets

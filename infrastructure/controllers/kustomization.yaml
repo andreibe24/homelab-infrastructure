@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Controller/operator installs (mostly HelmRelease objects), reconciled by
+# Kustomization/infra-controllers with `wait: true`.
+#
+# HOW TO ADD YOUR TOPIC (per-topic agents):
+#   1. put your manifests in ./<topic>/ together with a ./<topic>/kustomization.yaml
+#   2. uncomment (or add) the matching line below
+#   3. keep CRD-only charts (e.g. linkerd-crds) as a separate HelmRelease that the
+#      main chart declares in `dependsOn`
+resources:
+  - cert-manager                # topic 2 (linkerd-mtls): cert-manager HelmRelease
+  - linkerd                     # topic 2: linkerd-crds + linkerd-control-plane (+ linkerd-viz)
+  - actions-runner-controller   # topic 3: gha-runner-scale-set-controller + homelab-runners scale set
+  - observability               # topic 5: kube-prometheus-stack (Prometheus, Alertmanager, Grafana)
+  - renovate                    # topic 6: renovate CronJob + ServiceAccount (no CRDs)

@@ -1,0 +1,103 @@
+# Webapp (topic 4) availability + HTTP/3 alerts.
+#
+# Forward-looking, exactly like the ServiceMonitors: until topic 4 deploys the
+# Django/Hypercorn backend these rules evaluate to "no data" and never fire (the
+# `absent()` rules are deliberately scoped so they only complain once the
+# Deployment exists, not before).
+#
+# Metric names assume `django-prometheus` on the backend (see
+# apps/base/webapp/PLAN.md); rename here if topic 4 picks a different exporter.
+#
+# NOTE on the `job` label: for a ServiceMonitor without `jobLabel`, the Prometheus
+# Operator sets `job` to the **Service name**, so `job="webapp-backend"` below
+# matches the Service topic 4 creates (apps/base/webapp/service-backend.yaml).
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: webapp
+  namespace: observability
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: observability
+spec:
+  groups:
+    - name: webapp.rules
+      interval: 30s
+      rules:
+        - alert: WebappBackendDown
+          # Fires only if the workload is supposed to exist (kube-state-metrics
+          # reports a Deployment) but no scrape target is up.
+          expr: |
+            (
+              sum(up{job="webapp-backend"}) == 0
+            )
+            and on ()
+            (
+              max(kube_deployment_spec_replicas{job="kube-state-metrics", namespace="webapp"}) > 0
+            )
+          for: 5m
+          labels:
+            severity: critical
+            category: webapp
+          annotations:
+            summary: "webapp backend has no healthy scrape targets"
+            description: "All Django/Hypercorn pods are down or /metrics is unreachable."
+
+        - alert: WebappHighErrorRate
+          expr: |
+            (
+              sum(rate(django_http_responses_total_by_status_total{status=~"5.."}[5m]))
+                /
+              sum(rate(django_http_responses_total_by_status_total[5m]))
+            ) > 0.05
+          for: 10m
+          labels:
+            severity: warning
+            category: webapp
+          annotations:
+            summary: "webapp 5xx rate is {{ $value | humanizePercentage }}"
+            description: "More than 5% of HTTP responses are server errors over the last 5 minutes."
+
+        - alert: WebappHighLatency
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum by (le) (rate(django_http_requests_latency_seconds_by_view_method_bucket[5m]))
+            ) > 1
+          for: 10m
+          labels:
+            severity: warning
+            category: webapp
+          annotations:
+            summary: "webapp p95 latency is {{ $value | printf \"%.2f\" }}s"
+            description: "95th percentile request latency above 1s for 10 minutes."
+
+        - alert: WebappQuicHandshakeFailures
+          # HTTP/3 runs over UDP and therefore bypasses the Linkerd mesh entirely;
+          # a broken cert or a blocked UDP path shows up here and nowhere else.
+          # Metric is exported by the aioquic/Hypercorn instrumentation topic 4 adds.
+          expr: |
+            sum(rate(quic_handshake_failures_total[10m])) > 0
+          for: 10m
+          labels:
+            severity: warning
+            category: webapp
+          annotations:
+            summary: "QUIC handshakes are failing for the webapp"
+            description: >-
+              Clients cannot complete the HTTP/3 handshake (TLS 1.3 cert problem,
+              UDP/443 blocked, or the cert-manager Certificate is not renewed).
+              Browsers silently fall back to HTTP/2, so this is otherwise invisible.
+
+        - alert: WebappCertificateExpiringSoon
+          # cert-manager exports this once topic 2 installs it.
+          expr: |
+            (certmanager_certificate_expiration_timestamp_seconds{namespace="webapp"} - time()) < 86400 * 14
+          for: 1h
+          labels:
+            severity: warning
+            category: webapp
+          annotations:
+            summary: "Certificate {{ $labels.name }} expires in {{ $value | humanizeDuration }}"
+            description: "QUIC mandates TLS 1.3 — an expired cert takes HTTP/3 down, not just HTTPS."
