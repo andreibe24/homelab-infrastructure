@@ -2,7 +2,7 @@
 #
 # Declares the labels exposed by the in-cluster ARC runner scale set
 # (`scaleSetLabels` in
-# infrastructure/controllers/actions-runner-controller/helmrelease-runner-scale-set.yaml)
+# infrastructure/actions-runner-controller/helmrelease-runner-scale-set.yaml)
 # so `runs-on: [self-hosted, homelab-runners]` is not reported as an unknown
 # label.
 self-hosted-runner:

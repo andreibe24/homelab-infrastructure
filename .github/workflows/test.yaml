@@ -9,8 +9,14 @@ name: test
 on:
   push:
     branches: [main]
+    paths:
+      - "src/webapp/**"
+      - ".github/workflows/test.yaml"
   pull_request:
     branches: [main]
+    paths:
+      - "src/webapp/**"
+      - ".github/workflows/test.yaml"
   workflow_dispatch:
 
 permissions:

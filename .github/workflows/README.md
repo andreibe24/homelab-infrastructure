@@ -6,7 +6,7 @@ GitHub-hosted minute usage and no long-lived VM runner.
 
 Infrastructure side of the story (ARC charts, BuildKit sidecar, network policy,
 threat model):
-[`infrastructure/controllers/actions-runner-controller/README.md`](../../infrastructure/controllers/actions-runner-controller/README.md).
+[`infrastructure/actions-runner-controller/README.md`](../../infrastructure/actions-runner-controller/README.md).
 
 ## Pipelines
 

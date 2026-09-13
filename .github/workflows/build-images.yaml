@@ -14,16 +14,19 @@
 #
 # arm64 layers are produced by QEMU emulation; the binfmt handlers are registered
 # on each node by the DaemonSet in
-# infrastructure/configs/actions-runner-controller/binfmt-daemonset.yaml.
+# infrastructure/actions-runner-controller/binfmt-daemonset.yaml.
 name: build-images
 
 on:
   push:
     branches: [main]
     tags: ["v*.*.*"]
-    # No `paths:` filter on purpose: GitHub evaluates path filters for tag pushes
-    # too, which would silently skip release builds whose tagged commit does not
-    # touch src/webapp/**.
+    # No top-level `paths:` filter here on purpose: GitHub evaluates path
+    # filters for tag pushes too, which would silently skip release builds
+    # whose tagged commit does not itself touch src/webapp/** (e.g. a tag cut
+    # from a commit that only bumped a changelog). Path-scoping for the
+    # common case (plain pushes to main / PRs) is instead done by the
+    # `changes` gate job below, which is skipped entirely for tag refs.
   workflow_dispatch:
 
 permissions:
@@ -35,8 +38,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  changes:
+    name: detect relevant changes
+    runs-on: [self-hosted, homelab-runners]
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      relevant: ${{ steps.gate.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether to build
+        id: gate
+        run: |
+          set -euo pipefail
+          # Tags are explicit release intent: always build regardless of diff.
+          if [[ "${{ github.ref_type }}" == "tag" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base="${{ github.event.before }}"
+          if [[ -z "$base" ]] || [[ "$base" =~ ^0+$ ]]; then
+            base="$(git rev-list --max-parents=0 HEAD)"
+          fi
+          if git diff --quiet "$base" "${{ github.sha }}" -- src/webapp/ .github/workflows/build-images.yaml; then
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::no changes under src/webapp/ - skipping image build"
+          else
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     name: ${{ matrix.component }} (amd64 + arm64)
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
     runs-on: [self-hosted, homelab-runners]
     strategy:
       fail-fast: false
@@ -52,7 +88,7 @@ jobs:
             image: webapp-frontend
     env:
       # Must match the buildkitd sidecar `--addr` in
-      # infrastructure/controllers/actions-runner-controller/helmrelease-runner-scale-set.yaml.
+      # infrastructure/actions-runner-controller/helmrelease-runner-scale-set.yaml.
       # (The pod already exports BUILDKIT_HOST, but the `env` context of a
       # workflow cannot read process environment variables, so it is restated.)
       BUILDKIT_HOST: tcp://127.0.0.1:1234

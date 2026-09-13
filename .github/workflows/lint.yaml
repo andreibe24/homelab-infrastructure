@@ -3,7 +3,7 @@
 # backend and the Vite frontend.
 #
 # Runs on the in-cluster ARC scale set (see
-# infrastructure/controllers/actions-runner-controller/README.md).
+# infrastructure/actions-runner-controller/README.md).
 #
 # Security notes:
 #   * `permissions: contents: read` -- this workflow's GITHUB_TOKEN cannot write
@@ -19,8 +19,20 @@ name: lint
 on:
   push:
     branches: [main]
+    paths:
+      - "src/webapp/**"
+      - "apps/**"
+      - "clusters/**"
+      - "infrastructure/**"
+      - ".github/workflows/lint.yaml"
   pull_request:
     branches: [main]
+    paths:
+      - "src/webapp/**"
+      - "apps/**"
+      - "clusters/**"
+      - "infrastructure/**"
+      - ".github/workflows/lint.yaml"
   workflow_dispatch:
 
 permissions:
