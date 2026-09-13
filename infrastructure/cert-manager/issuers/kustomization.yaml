@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# cert-manager — issuers stage.
+#
+# ClusterIssuer + the homelab root CA Certificate need cert-manager's CRDs
+# (Certificate, Issuer, ClusterIssuer) to already be registered. Reconciled by
+# Kustomization/cert-manager-issuers, which dependsOn cert-manager-release with
+# `wait: true` for exactly that reason.
+resources:
+  - cluster-issuers.yaml

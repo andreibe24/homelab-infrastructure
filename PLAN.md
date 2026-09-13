@@ -27,13 +27,14 @@ brief.
         │                              │
  infrastructure.yaml               apps.yaml
         │                              │
- infra-namespaces                      │
-        ▼                              │
- infra-sources                         │
-        ▼                              │
- infra-controllers  (HelmReleases, wait: true)
-        ▼                              │
- infra-configs      (CRs needing those CRDs)
+ one or more Flux Kustomizations       │
+ PER COMPONENT (wait: true),           │
+ dependsOn-chained only where a        │
+ genuine CRD-ordering need exists      │
+ (cert-manager, linkerd,               │
+ observability); the rest              │
+ (actions-runner-controller,           │
+ renovate) run in parallel             │
         └──────────────┬───────────────┘
                        ▼
                  Kustomization/apps  → path ./apps/homelab
@@ -44,13 +45,13 @@ Design rules:
 - **Flux monorepo pattern**: `clusters/<cluster>/` holds only Flux `Kustomization`
   entrypoints; the actual manifests live in `infrastructure/` and `apps/` and are
   cluster-agnostic, so a second cluster is a new `clusters/<name>/` directory only.
-- **Ordered layers via `dependsOn` + `wait: true`**: namespaces → sources →
-  controllers → configs → apps. This is what guarantees CRDs (Linkerd, ARC,
-  Prometheus Operator, cert-manager) exist before any custom resource is applied.
-- **Shared objects are centralised**: all `Namespace` objects live in
-  `infrastructure/namespaces/`, all `HelmRepository` objects in
-  `infrastructure/sources/`. Topic agents edit those shared files rather than
-  creating duplicates, which avoids ownership conflicts and pruning surprises.
+- **Organised by component, not by resource role**: `infrastructure/<component>/`
+  is a single self-contained directory owning its own `Namespace`(s), Helm
+  source(s), `HelmRelease`(s) and any custom resources. A component only gets an
+  internal multi-stage split (its own subdirectories, each its own Flux
+  `Kustomization` chained with `dependsOn` + `wait: true`) where a custom
+  resource genuinely depends on a CRD that a HelmRelease in the same component
+  has not yet installed — see `infrastructure/README.md`.
 - **No plaintext secrets**: SOPS-encrypted files or `SealedSecret` only. Topic 3
   makes the repo-wide choice and bootstraps the mechanism.
 - **Everything pinned**: exact chart versions and image tags, so Renovate (topic 6)
@@ -76,34 +77,31 @@ homelab-infrastructure/
 │   └── homelab/                            ← TOPIC 1 (implemented)
 │       ├── flux-system/                    managed by `flux bootstrap`
 │       │   └── README.md                   bootstrap instructions / placeholder
-│       ├── infrastructure.yaml             4 ordered Flux Kustomizations
+│       ├── infrastructure.yaml             one or more Flux Kustomizations per component
 │       └── apps.yaml                       Flux Kustomization → ./apps/homelab
-├── infrastructure/                         ← TOPIC 1 skeleton, topics 2/3/5/6 fill in
-│   ├── README.md
-│   ├── namespaces/                         (topic 1, implemented)
-│   │   ├── namespaces.yaml
-│   │   └── kustomization.yaml
-│   ├── sources/                            (topic 1, implemented)
-│   │   ├── helm-repositories.yaml
-│   │   ├── oci-repositories.yaml
-│   │   └── kustomization.yaml
-│   ├── controllers/
-│   │   ├── kustomization.yaml              (topic 1; entries pre-listed as comments)
-│   │   ├── cert-manager/PLAN.md            (topic 2)
-│   │   ├── linkerd/PLAN.md                 (topic 2)
-│   │   ├── actions-runner-controller/PLAN.md (topic 3)
-│   │   ├── observability/PLAN.md           (topic 5)
-│   │   └── renovate/PLAN.md                (topic 6)
-│   └── configs/
-│       ├── kustomization.yaml              (topic 1; entries pre-listed as comments)
-│       ├── linkerd/                        (topic 2 creates)
-│       ├── actions-runner-controller/      (topic 3 creates)
-│       ├── observability/                  (topic 5 creates)
-│       └── renovate/                       (topic 6 creates)
+├── infrastructure/                         ← organised by COMPONENT, not by resource role
+│   ├── README.md                           per-component layout + internal-staging convention
+│   ├── cert-manager/                       (topic 2) release/ -> issuers/
+│   │   ├── README.md
+│   │   ├── release/                        Namespace, HelmRepository, HelmRelease
+│   │   └── issuers/                        ClusterIssuers (need cert-manager's CRDs)
+│   ├── linkerd/                            (topic 2) pki/ -> release/ -> policy/
+│   │   ├── README.md
+│   │   ├── pki/                            Namespace/linkerd, trust anchor + identity issuer Certificates
+│   │   ├── release/                        Namespace/linkerd-viz, HelmRepository, linkerd-crds/control-plane/viz HelmReleases
+│   │   └── policy/                         AuthorizationPolicy / MeshTLSAuthentication
+│   ├── actions-runner-controller/          (topic 3) single stage
+│   │   └── README.md
+│   ├── observability/                      (topic 5) release/ -> crs/
+│   │   ├── README.md
+│   │   ├── release/                        Namespace, HelmRepositories, kube-prometheus-stack HelmRelease
+│   │   └── crs/                            ServiceMonitors, PodMonitors, PrometheusRules, AlertmanagerConfig, dashboard ConfigMap
+│   ├── renovate/                           (topic 6) single stage
+│   │   └── README.md
 ├── apps/
 │   ├── README.md
 │   ├── base/
-│   │   └── webapp/PLAN.md                  (topic 4)
+│   │   └── webapp/                         (topic 4) Namespace/webapp lives here too
 │   └── homelab/
 │       └── kustomization.yaml              (topic 1; cluster overlay entrypoint)
 ├── src/                                    (topic 4 creates)
@@ -119,21 +117,23 @@ homelab-infrastructure/
 
 | # | Topic | Writes to | Brief |
 | - | ----- | --------- | ----- |
-| 1 | **cluster-bootstrap** | `clusters/homelab/`, `infrastructure/{namespaces,sources}`, stage `kustomization.yaml` files, `apps/homelab/` | **Done.** Flux entrypoints, layer ordering, shared namespaces and Helm sources. |
-| 2 | **linkerd-mtls** | `infrastructure/controllers/{cert-manager,linkerd}/`, `infrastructure/configs/linkerd/` | `infrastructure/controllers/linkerd/PLAN.md` |
-| 3 | **ci-self-hosted-runners** | `infrastructure/controllers/actions-runner-controller/`, `infrastructure/configs/actions-runner-controller/`, `.github/workflows/` | `infrastructure/controllers/actions-runner-controller/PLAN.md` |
+| 1 | **cluster-bootstrap** | `clusters/homelab/`, `infrastructure/README.md` | **Done.** Flux entrypoints and the per-component layout convention. |
+| 2 | **linkerd-mtls** | `infrastructure/cert-manager/`, `infrastructure/linkerd/` | `infrastructure/linkerd/README.md` |
+| 3 | **ci-self-hosted-runners** | `infrastructure/actions-runner-controller/`, `.github/workflows/` | `infrastructure/actions-runner-controller/README.md` |
 | 4 | **cd-webapp** | `src/webapp/`, `apps/base/webapp/`, `apps/homelab/` | `apps/base/webapp/PLAN.md` |
-| 5 | **observability** | `infrastructure/controllers/observability/`, `infrastructure/configs/observability/` | `infrastructure/controllers/observability/PLAN.md` |
-| 6 | **renovate** | `renovate.json`, `infrastructure/configs/renovate/` (and/or `controllers/renovate/`) | `infrastructure/controllers/renovate/PLAN.md` |
+| 5 | **observability** | `infrastructure/observability/` | `infrastructure/observability/README.md` |
+| 6 | **renovate** | `renovate.json`, `infrastructure/renovate/` | `infrastructure/renovate/README.md` |
 
-**1 — cluster-bootstrap.** Flux monorepo layout, the four ordered infrastructure
-Kustomizations plus the apps Kustomization, all shared namespaces (with mesh
-injection annotations pre-set) and all shared `HelmRepository`/OCI sources.
+**1 — cluster-bootstrap.** Flux monorepo layout, the per-component Flux
+Kustomization graph in `clusters/homelab/infrastructure.yaml`, and the
+`infrastructure/README.md` convention every other topic follows: one
+self-contained directory per component, split into internal stages only where a
+real CRD-ordering requirement exists.
 
-**2 — linkerd-mtls.** cert-manager + `linkerd-crds` + `linkerd-control-plane`
-HelmReleases, trust anchor and identity issuer `Certificate`s, optional `linkerd-viz`.
-Key caveat captured in its plan: Linkerd does not proxy UDP, so the webapp's QUIC port
-must skip the mesh.
+**2 — linkerd-mtls.** cert-manager (its own `release`/`issuers` stages) +
+`linkerd-crds` + `linkerd-control-plane` HelmReleases, trust anchor and identity
+issuer `Certificate`s, optional `linkerd-viz`. Key caveat captured in its plan:
+Linkerd does not proxy UDP, so the webapp's QUIC port must skip the mesh.
 
 **3 — ci-self-hosted-runners.** ARC `gha-runner-scale-set-controller` + runner scale
 sets, GitHub App/PAT credentials via SOPS or SealedSecrets, BuildKit (or Kaniko) for
@@ -161,11 +161,20 @@ it does not fight Flux image automation over the webapp's own images.
 1. **Secret mechanism** (SOPS+age vs. SealedSecrets) is decided by topic 3 first;
    topics 4, 5 and 6 follow it. SOPS additionally requires `decryption.secretRef` on
    the affected Flux Kustomizations in `clusters/homelab/infrastructure.yaml`.
-2. **Namespaces**: only `infrastructure/namespaces/namespaces.yaml` may declare them.
-3. **Helm sources**: only `infrastructure/sources/` may declare them.
-4. **Stage registration**: every topic must uncomment its directory in
-   `infrastructure/controllers/kustomization.yaml` and/or
-   `infrastructure/configs/kustomization.yaml`, otherwise its manifests are inert.
+2. **Namespaces**: each component declares its own `Namespace`(s) inside its own
+   directory (in the earliest stage that needs them); there is no shared
+   namespaces file. `apps/base/webapp` (topic 4) follows the same convention —
+   `Namespace/webapp` lives in `apps/base/webapp/namespace.yaml`, applied by
+   `Kustomization/apps`, not by any `infrastructure/` stage.
+3. **Helm sources**: each component declares its own `HelmRepository`/
+   `OCIRepository` object(s) inside its own directory. Duplicating a repository
+   URL under a different `HelmRepository` name in more than one component is
+   fine and expected.
+4. **Stage registration**: every topic must register its component's Flux
+   `Kustomization`(s) in `clusters/homelab/infrastructure.yaml`, with
+   `dependsOn`/`wait: true` between internal stages where its own README
+   documents a genuine CRD-ordering requirement, otherwise its manifests are
+   inert.
 5. **Version pinning** is mandatory for Renovate to work.
 6. **Image pipeline**: topic 3 publishes → topic 4 consumes via `ImagePolicy`;
    Renovate must ignore those images.

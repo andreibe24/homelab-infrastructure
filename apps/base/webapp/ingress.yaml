@@ -2,7 +2,7 @@
 #
 # DECISION: plain `Ingress` + ingress-nginx, NOT Gateway API.
 #   * ingress-nginx is the only north-south implementation declared in
-#     infrastructure/sources/helm-repositories.yaml; no Gateway API controller is
+#     infrastructure/*/release/helm-repository*.yaml; no Gateway API controller is
 #     installed by any topic, so an `HTTPRoute` would be inert.
 #   * Neither object helps with HTTP/3 anyway: `Ingress` has no UDP concept, and a
 #     Gateway API `Listener` with `protocol: UDP` requires an implementation that

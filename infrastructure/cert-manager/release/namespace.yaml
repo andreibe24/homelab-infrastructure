@@ -1,0 +1,10 @@
+# cert-manager owns its Namespace: it travels with the component instead of
+# living in a repo-wide shared namespaces file.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    app.kubernetes.io/part-of: homelab
+    pod-security.kubernetes.io/enforce: privileged

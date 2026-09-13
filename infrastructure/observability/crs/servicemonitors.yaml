@@ -1,0 +1,71 @@
+# ServiceMonitors — forward-looking, purely label-selector based.
+#
+# ARC (topic 3) is scraped with PodMonitors instead (see podmonitors.yaml): its
+# controller-manager and per-scale-set listeners expose :8080 on the pods, and the
+# listener pods have no Service at all.
+#
+# They are applied by Kustomization/observability-crs once the Prometheus
+# Operator CRDs exist (installed by observability-release). The Services they select belong to
+# topic 4 and may not exist yet: a ServiceMonitor whose selector matches
+# nothing is simply a target-less scrape job, which is harmless. The moment those
+# topics land their Services with the labels below, scraping starts on its own —
+# no change needed here.
+#
+# Prometheus discovers these across ALL namespaces because the HelmRelease sets
+# serviceMonitorSelectorNilUsesHelmValues: false with empty selectors.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: webapp-backend
+  namespace: webapp
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: observability
+spec:
+  # Topic 4 (apps/base/webapp): Django + Hypercorn, django-prometheus exposes
+  # /metrics on the plain HTTP (TCP) port. The QUIC/UDP port is NOT scrapable —
+  # Prometheus only speaks HTTP over TCP.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webapp
+      app.kubernetes.io/component: backend
+  namespaceSelector:
+    matchNames:
+      - webapp
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      scheme: http
+      # Keeps the node name on every series, which is what the per-node panels in
+      # the Cluster Overview dashboard key on.
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+          action: replace
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: webapp-frontend
+  namespace: webapp
+  labels:
+    app.kubernetes.io/part-of: homelab
+    app.kubernetes.io/component: observability
+spec:
+  # nginx serving the Vite build. Scrapes the nginx status/exporter port if topic 4
+  # ships one (nginx-prometheus-exporter sidecar or the stub_status module).
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webapp
+      app.kubernetes.io/component: frontend
+  namespaceSelector:
+    matchNames:
+      - webapp
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# actions-runner-controller — single stage.
+#
+# Everything this component owns is applied together: its Namespaces, Helm
+# sources, the two HelmReleases (ordered between themselves via HelmRelease
+# `spec.dependsOn`, not via a separate Flux Kustomization), and the plain
+# Kubernetes objects that support the runner scale set (NetworkPolicy, RBAC,
+# the binfmt DaemonSet). None of those need a CRD that only exists after a
+# HelmRelease installs, so a two-stage split is unnecessary here — see
+# ../README.md for the per-component staging convention.
+resources:
+  - namespaces.yaml
+  - helm-repositories.yaml
+  - helmrelease-controller.yaml
+  - helmrelease-runner-scale-set.yaml
+  - networkpolicy.yaml
+  - rbac.yaml
+  - binfmt-daemonset.yaml
+  # github-app-secret.stub.yaml is intentionally NOT listed: it is a placeholder.
+  # After encrypting it, add exactly one of:
+  # - github-app-secret.sops.yaml        # SOPS + age (needs decryption.secretRef)
+  # - github-app-sealedsecret.yaml       # sealed-secrets

@@ -1,0 +1,21 @@
+# actions-runner-controller owns its Namespaces: they travel with the
+# component instead of living in a repo-wide shared namespaces file.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-systems
+  labels:
+    app.kubernetes.io/part-of: homelab
+    # actions-runner-controller (gha-runner-scale-set-controller) lives here.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-runners
+  labels:
+    app.kubernetes.io/part-of: homelab
+    # Ephemeral runner pods + BuildKit/Kaniko builders land here.
+    # Deliberately NOT mesh-injected: build pods are short-lived and churn a lot.
+  annotations:
+    linkerd.io/inject: disabled

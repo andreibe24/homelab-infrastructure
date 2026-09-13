@@ -1,0 +1,23 @@
+# Helm chart sources for this component. Owned here instead of a shared
+# cross-cutting sources file.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: prometheus-community
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://prometheus-community.github.io/helm-charts
+---
+# Currently unused: Grafana is installed as a kube-prometheus-stack sub-chart
+# (see ../README.md, "Decision — bundled Grafana"). Kept pre-declared for a
+# future Loki/Promtail/standalone-Grafana split.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://grafana.github.io/helm-charts

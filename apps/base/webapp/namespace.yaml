@@ -1,0 +1,16 @@
+# Owned by this component (apps/base/webapp), same convention as every
+# infrastructure/<component>/ directory: the app that uses a Namespace
+# declares it right next to its own manifests instead of a shared/central
+# namespaces file. Applied by Kustomization/apps (apps/homelab -> ../base/webapp),
+# which is why `Kustomization/apps` no longer depends on a separate
+# `apps-namespace` infrastructure stage.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: webapp
+  labels:
+    app.kubernetes.io/part-of: homelab
+  annotations:
+    # Automatic mTLS for the Django/Hypercorn backend and the nginx frontend.
+    linkerd.io/inject: enabled

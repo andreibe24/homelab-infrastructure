@@ -1,9 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-# Mesh policy CRs. Requires the Linkerd CRDs, so this directory is reconciled by
-# the infra-configs stage (after infra-controllers is Ready).
-#
-# The PKI (trust anchor + identity issuer) deliberately lives in ./pki/ and is
-# NOT listed here — it must be reconciled earlier, by Kustomization/linkerd-pki.
-resources:
-  - authorization-policies.yaml

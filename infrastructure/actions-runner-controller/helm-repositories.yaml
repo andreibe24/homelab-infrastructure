@@ -1,0 +1,28 @@
+# Helm chart sources for this component. Owned here instead of a shared
+# cross-cutting sources file.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: actions-runner-controller
+  namespace: flux-system
+spec:
+  type: oci
+  interval: 12h
+  url: oci://ghcr.io/actions/actions-runner-controller-charts
+  # Charts: gha-runner-scale-set-controller, gha-runner-scale-set.
+  # These are public; if the registry ever requires auth, add:
+  #   secretRef:
+  #     name: ghcr-auth   # dockerconfigjson Secret in flux-system
+---
+# Kept here (unused for now) as the pre-approved source for the alternative
+# secret-management mechanism this component's README documents (Option B:
+# sealed-secrets instead of SOPS+age) for the GitHub App credential.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: bitnami-labs
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://bitnami-labs.github.io/sealed-secrets

@@ -4,15 +4,13 @@
 # the Flux image-automation CRs. Nothing here is cluster-specific except the
 # placeholder hostnames, which the overlay may patch.
 #
-# The `webapp` Namespace is NOT declared here: it is owned by
-# infrastructure/namespaces/namespaces.yaml (topic 1) and already carries
-# `linkerd.io/inject: enabled`.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 namespace: webapp
 
 resources:
+  - namespace.yaml
   - configmap-app.yaml
   - configmap-nginx.yaml
   - deployment-backend.yaml

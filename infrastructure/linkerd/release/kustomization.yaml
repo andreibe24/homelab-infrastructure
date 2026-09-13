@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Linkerd — release stage.
+#
+# Namespace/linkerd-viz + HelmRepository + the three HelmReleases (linkerd-crds,
+# linkerd-control-plane, linkerd-viz). Reconciled by Kustomization/linkerd-release,
+# which dependsOn linkerd-pki (wait: true) so the trust anchor Secret already
+# exists by the time linkerd-control-plane's HelmRelease is applied.
+#
+# Order between the three HelmReleases is expressed with HelmRelease
+# `spec.dependsOn` (control-plane depends on linkerd-crds + cert-manager; viz
+# depends on control-plane), not with the resource list here.
+resources:
+  - namespace.yaml
+  - helm-repository.yaml
+  - helmrelease-crds.yaml
+  - helmrelease-control-plane.yaml
+  - helmrelease-viz.yaml

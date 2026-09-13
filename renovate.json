@@ -3,7 +3,7 @@
   "description": [
     "Renovate configuration for the homelab GitOps monorepo.",
     "Renovate runs SELF-HOSTED as a CronJob in the cluster (see",
-    "infrastructure/controllers/renovate/README.md) and reads this file from the",
+    "infrastructure/renovate/README.md) and reads this file from the",
     "default branch. Renovate only ever opens pull requests -- nothing reaches the",
     "cluster until a human merges to main and Flux reconciles the merge commit."
   ],
@@ -39,9 +39,9 @@
   "flux": {
     "description": [
       "Native Flux manager: bumps spec.chart.spec.version in HelmRelease objects",
-      "(resolved through the HelmRepository/OCIRepository objects in",
-      "infrastructure/sources/), GitRepository tags, and docker images referenced",
-      "inside HelmRelease .spec.values. The default pattern only covers",
+      "(resolved through each component's own HelmRepository/OCIRepository",
+      "objects), GitRepository tags, and docker images referenced inside",
+      "HelmRelease .spec.values. The default pattern only covers",
       "gotk-components.yaml, so it is widened to the whole monorepo here."
     ],
     "managerFilePatterns": [

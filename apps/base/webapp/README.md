@@ -7,6 +7,7 @@ topic 3's `.github/workflows/build-images.yaml`.
 
 ```
 apps/base/webapp/
+├── namespace.yaml            Namespace/webapp (linkerd.io/inject: enabled)
 ├── configmap-app.yaml        Django env + nginx envsubst variables
 ├── configmap-nginx.yaml      nginx server block (template, rendered at pod start)
 ├── deployment-backend.yaml   Django + Hypercorn/aioquic, 3 listeners, mesh-skip
@@ -18,9 +19,8 @@ apps/base/webapp/
 └── kustomization.yaml
 ```
 
-The `webapp` Namespace is **not** declared here — it is owned by
-`infrastructure/namespaces/namespaces.yaml` and already carries
-`linkerd.io/inject: enabled`.
+The `webapp` Namespace **is** declared here, in `namespace.yaml`, and already
+carries `linkerd.io/inject: enabled`.
 
 ---
 
@@ -105,7 +105,7 @@ not go through it.**
   through the controller's `udp-services` ConfigMap, which is a raw L4 forward —
   not ingress routing, and it still would not terminate QUIC.
 * Gateway API `HTTPRoute` is the nicer object, but no Gateway controller is
-  installed by any topic in this repo (`infrastructure/sources/` only ships
+  installed by any topic in this repo (the per-component `release/helm-repository.yaml` files only ship
   ingress-nginx), so an `HTTPRoute` would be inert. HTTP/3 would additionally
   require a Gateway implementation with a QUIC listener (Envoy Gateway, Cilium
   with a `UDPRoute`, …) — a much bigger dependency than this demo warrants.
@@ -170,7 +170,7 @@ Why, given that UDP is never intercepted anyway:
    `/metrics`) still gets automatic mTLS and L7 metrics. Nothing is lost: the
    plaintext port is never published outside the cluster.
 
-Coordinate with topic 2 (`infrastructure/controllers/linkerd/PLAN.md`) if the mesh
+Coordinate with topic 2 (`infrastructure/linkerd/README.md`) if the mesh
 ever moves to a policy-default-deny posture: the QUIC path is *outside* the mesh,
 so `Server`/`AuthorizationPolicy` objects cannot protect it.
 
@@ -199,7 +199,7 @@ monotonically increasing field is required for a deterministic "latest".
 > bootstrapped with
 > `--components-extra=image-reflector-controller,image-automation-controller`
 > (documented in [`clusters/homelab/flux-system/README.md`](../../../clusters/homelab/flux-system/README.md)).
-> `infrastructure/sources/` contains only `HelmRepository` objects and does **not**
+> Each component's `release/helm-repository.yaml` contains only `HelmRepository` objects and does **not**
 > and cannot install those controllers — if they are missing, the CRDs are absent
 > and the whole `apps` Kustomization fails on unknown kinds. Re-run
 > `flux bootstrap` with the flag to fix it.

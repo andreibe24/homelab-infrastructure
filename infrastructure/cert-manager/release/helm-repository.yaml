@@ -1,0 +1,12 @@
+# Helm chart source for cert-manager. Owned by this component instead of a
+# shared cross-cutting sources file -- duplication of a repo URL under a
+# different HelmRepository name in another component is fine and expected.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: jetstack
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://charts.jetstack.io

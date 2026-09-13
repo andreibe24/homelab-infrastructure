@@ -1,0 +1,72 @@
+# cert-manager — PKI engine for the cluster (owned by topic 2, linkerd-mtls).
+#
+# It is installed here because the Linkerd trust anchor and the (48h, auto
+# rotating) identity issuer certificate are cert-manager `Certificate` objects.
+# Other topics (webapp TLS, Grafana ingress) consume the ClusterIssuers created
+# in `../issuers/` instead of shipping their own PKI.
+#
+# Chart version is pinned on purpose; Renovate (topic 6) bumps it via its Flux
+# manager. Verify against https://github.com/cert-manager/cert-manager/releases
+# before bumping by hand.
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  interval: 1h
+  timeout: 10m
+  releaseName: cert-manager
+  chart:
+    spec:
+      chart: cert-manager
+      version: v1.21.2
+      sourceRef:
+        kind: HelmRepository
+        name: jetstack
+        namespace: flux-system
+      interval: 12h
+  install:
+    crds: Create
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    # `crds.enabled` replaces the legacy `installCRDs` flag (deprecated since
+    # chart v1.15). `keep: true` prevents a chart uninstall from deleting every
+    # Certificate/Issuer in the cluster.
+    crds:
+      enabled: true
+      keep: true
+
+    # Single-node homelab: one replica of each component is enough.
+    replicaCount: 1
+    webhook:
+      replicaCount: 1
+    cainjector:
+      replicaCount: 1
+
+    # Waits for the webhook to serve before Flux marks the release Ready, so the
+    # `linkerd-pki` Kustomization never races the admission webhook.
+    startupapicheck:
+      enabled: true
+
+    global:
+      leaderElection:
+        namespace: cert-manager
+
+    # Metrics are exposed unconditionally; the ServiceMonitor is owned by topic 5
+    # (observability) so it is left disabled here to avoid a CRD dependency.
+    prometheus:
+      enabled: true
+      servicemonitor:
+        enabled: false
+
+    # The Linkerd control plane is not meshed, and cert-manager sits below the
+    # mesh in the dependency graph, so it stays out of the data plane.
+    podAnnotations:
+      linkerd.io/inject: disabled

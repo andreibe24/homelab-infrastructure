@@ -1,0 +1,13 @@
+# The `linkerd-viz` Namespace travels with the release stage: it only needs to
+# exist once the linkerd-viz HelmRelease below is applied.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: linkerd-viz
+  labels:
+    app.kubernetes.io/part-of: homelab
+    linkerd.io/extension: viz
+    pod-security.kubernetes.io/enforce: privileged
+  annotations:
+    linkerd.io/inject: enabled

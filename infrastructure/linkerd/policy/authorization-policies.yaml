@@ -1,0 +1,95 @@
+# Mesh authentication/authorization primitives.
+#
+# Reconciled by Kustomization/linkerd-policy (dependsOn linkerd-release,
+# wait: true — the Linkerd CRDs already exist by then). Everything in this file
+# is INERT on its own: `MeshTLSAuthentication` and `NetworkAuthentication` only
+# have an effect once an `AuthorizationPolicy` references them, so applying
+# them cannot break a workload.
+#
+# Why the `Server` + `AuthorizationPolicy` pair at the bottom is commented out:
+# creating a `Server` flips the selected port from the cluster default
+# (`all-unauthenticated`) to deny-by-default. Any client that is not explicitly
+# authorized — an unmeshed ingress controller, a `kubectl port-forward`, a
+# scraper outside the mesh — starts getting connection refused. Enable it only
+# once topic 4's webapp actually exists and its labels/port names are known.
+---
+# Every workload identity in the `webapp` namespace. Linkerd identities have the
+# shape <serviceaccount>.<namespace>.serviceaccount.identity.linkerd.<trust domain>
+# and are proven by the leaf certificate the proxy presents during the mTLS
+# handshake — this is exactly the "2 identities verifying each other" property.
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: webapp-mesh-clients
+  namespace: webapp
+  labels:
+    app.kubernetes.io/part-of: linkerd
+spec:
+  identities:
+    - "*.webapp.serviceaccount.identity.linkerd.cluster.local"
+---
+# Meshed callers from the observability namespace (topic 5), e.g. Grafana or a
+# Prometheus that scrapes an application endpoint rather than the proxy's
+# admin port.
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata:
+  name: observability-mesh-clients
+  namespace: webapp
+  labels:
+    app.kubernetes.io/part-of: linkerd
+spec:
+  identities:
+    - "*.observability.serviceaccount.identity.linkerd.cluster.local"
+---
+# Unmeshed, node-local traffic: kubelet probes and (on most CNIs) health checks
+# from the node itself. Linkerd auto-authorizes probes declared in a container
+# spec, but an explicit NetworkAuthentication is needed for anything else that
+# comes from the node network once a Server is in place.
+apiVersion: policy.linkerd.io/v1alpha1
+kind: NetworkAuthentication
+metadata:
+  name: cluster-nodes
+  namespace: webapp
+  labels:
+    app.kubernetes.io/part-of: linkerd
+spec:
+  networks:
+    - cidr: 10.0.0.0/8
+    - cidr: 172.16.0.0/12
+    - cidr: 192.168.0.0/16
+#
+# ---------------------------------------------------------------------------
+# Enable after topic 4 lands, adjusting selector + port name to the real webapp:
+# ---------------------------------------------------------------------------
+#
+# apiVersion: policy.linkerd.io/v1beta1
+# kind: Server
+# metadata:
+#   name: webapp-backend-http
+#   namespace: webapp
+# spec:
+#   podSelector:
+#     matchLabels:
+#       app.kubernetes.io/name: webapp-backend
+#   port: http          # container port NAME on the backend pod
+#   proxyProtocol: HTTP/2
+# ---
+# apiVersion: policy.linkerd.io/v1alpha1
+# kind: AuthorizationPolicy
+# metadata:
+#   name: webapp-backend-http
+#   namespace: webapp
+# spec:
+#   targetRef:
+#     group: policy.linkerd.io
+#     kind: Server
+#     name: webapp-backend-http
+#   requiredAuthenticationRefs:
+#     - group: policy.linkerd.io
+#       kind: MeshTLSAuthentication
+#       name: webapp-mesh-clients
+#
+# NOTE (topic 4): do NOT create a Server for the QUIC/HTTP3 listener. It is UDP,
+# Linkerd does not proxy UDP, and the policy layer only covers TCP. See
+# ../../controllers/linkerd/README.md.

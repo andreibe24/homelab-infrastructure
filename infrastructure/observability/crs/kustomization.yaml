@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# observability — crs stage (custom resources).
+#
+# ServiceMonitor/PodMonitor/PrometheusRule/AlertmanagerConfig objects need the
+# Prometheus Operator CRDs installed by ../release/'s HelmRelease, so this stage
+# is reconciled by Kustomization/observability-crs, which dependsOn
+# observability-release with `wait: true`.
+#
+# No `namespace:` field here on purpose: these objects intentionally live in
+# several namespaces (webapp / linkerd / arc-* for the monitors, observability
+# for the rules, dashboards and alert routes). Prometheus discovers them
+# cluster-wide because the HelmRelease sets *SelectorNilUsesHelmValues: false
+# with empty selectors.
+resources:
+  - servicemonitors.yaml
+  - podmonitors.yaml
+  - prometheusrule-cronjob-failures.yaml
+  - prometheusrule-platform.yaml
+  - prometheusrule-webapp.yaml
+  - alertmanager-config.yaml
+  - dashboard-cluster-overview-configmap.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: flux
+    includeSelectors: false

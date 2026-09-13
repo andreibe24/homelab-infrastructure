@@ -6,7 +6,7 @@
 # PKI, this topic only consumes it.
 #
 # CONTRACT WITH TOPIC 2: `issuerRef.name` below must match the ClusterIssuer topic 2
-# creates in infrastructure/configs/. `homelab-ca` is the assumed name -- if topic 2
+# creates in infrastructure/cert-manager/issuers/. `homelab-ca` is the assumed name -- if topic 2
 # names it differently (or uses an ACME/DNS-01 issuer for a public domain), change
 # the two issuerRefs here and nothing else.
 ---
