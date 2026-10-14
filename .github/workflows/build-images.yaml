@@ -1,183 +1,183 @@
----
-# Multi-arch image build & push to GHCR.
-#
-# This is the only workflow that holds a writable token, and it is deliberately
-# unreachable from pull requests: it triggers on pushes to main and on version
-# tags only. Fork PRs therefore can never obtain `packages: write`.
-#
-# Where the build actually happens:
-#   steps run DIRECTLY in the ephemeral runner pod (no `container:`), because the
-#   rootless buildkitd sidecar of that pod is reachable on tcp://127.0.0.1:1234
-#   (BUILDKIT_HOST is pre-set by the scale set values). buildx is used in
-#   "remote driver" mode, so there is no Docker daemon, no docker.sock and no
-#   privileged container anywhere in the chain.
-#
-# arm64 layers are produced by QEMU emulation; the binfmt handlers are registered
-# on each node by the DaemonSet in
-# infrastructure/actions-runner-controller/binfmt-daemonset.yaml.
-name: build-images
+# ---
+# # Multi-arch image build & push to GHCR.
+# #
+# # This is the only workflow that holds a writable token, and it is deliberately
+# # unreachable from pull requests: it triggers on pushes to main and on version
+# # tags only. Fork PRs therefore can never obtain `packages: write`.
+# #
+# # Where the build actually happens:
+# #   steps run DIRECTLY in the ephemeral runner pod (no `container:`), because the
+# #   rootless buildkitd sidecar of that pod is reachable on tcp://127.0.0.1:1234
+# #   (BUILDKIT_HOST is pre-set by the scale set values). buildx is used in
+# #   "remote driver" mode, so there is no Docker daemon, no docker.sock and no
+# #   privileged container anywhere in the chain.
+# #
+# # arm64 layers are produced by QEMU emulation; the binfmt handlers are registered
+# # on each node by the DaemonSet in
+# # infrastructure/actions-runner-controller/binfmt-daemonset.yaml.
+# name: build-images
 
-on:
-  push:
-    branches: [main]
-    tags: ["v*.*.*"]
-    # No top-level `paths:` filter here on purpose: GitHub evaluates path
-    # filters for tag pushes too, which would silently skip release builds
-    # whose tagged commit does not itself touch src/webapp/** (e.g. a tag cut
-    # from a commit that only bumped a changelog). Path-scoping for the
-    # common case (plain pushes to main / PRs) is instead done by the
-    # `changes` gate job below, which is skipped entirely for tag refs.
-  workflow_dispatch:
+# on:
+#   push:
+#     branches: [main]
+#     tags: ["v*.*.*"]
+#     # No top-level `paths:` filter here on purpose: GitHub evaluates path
+#     # filters for tag pushes too, which would silently skip release builds
+#     # whose tagged commit does not itself touch src/webapp/** (e.g. a tag cut
+#     # from a commit that only bumped a changelog). Path-scoping for the
+#     # common case (plain pushes to main / PRs) is instead done by the
+#     # `changes` gate job below, which is skipped entirely for tag refs.
+#   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: write
+# permissions:
+#   contents: read
+#   packages: write
 
-concurrency:
-  group: build-images-${{ github.ref }}
-  cancel-in-progress: false
+# concurrency:
+#   group: build-images-${{ github.ref }}
+#   cancel-in-progress: false
 
-jobs:
-  changes:
-    name: detect relevant changes
-    runs-on: [self-hosted, homelab-runners]
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    outputs:
-      relevant: ${{ steps.gate.outputs.relevant }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+# jobs:
+#   changes:
+#     name: detect relevant changes
+#     runs-on: [self-hosted, homelab-runners]
+#     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+#     outputs:
+#       relevant: ${{ steps.gate.outputs.relevant }}
+#     steps:
+#       - uses: actions/checkout@v7
+#         with:
+#           fetch-depth: 0
 
-      - name: Decide whether to build
-        id: gate
-        run: |
-          set -euo pipefail
-          # Tags are explicit release intent: always build regardless of diff.
-          if [[ "${{ github.ref_type }}" == "tag" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "relevant=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          base="${{ github.event.before }}"
-          if [[ -z "$base" ]] || [[ "$base" =~ ^0+$ ]]; then
-            base="$(git rev-list --max-parents=0 HEAD)"
-          fi
-          if git diff --quiet "$base" "${{ github.sha }}" -- src/webapp/ .github/workflows/build-images.yaml; then
-            echo "relevant=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::no changes under src/webapp/ - skipping image build"
-          else
-            echo "relevant=true" >> "$GITHUB_OUTPUT"
-          fi
+#       - name: Decide whether to build
+#         id: gate
+#         run: |
+#           set -euo pipefail
+#           # Tags are explicit release intent: always build regardless of diff.
+#           if [[ "${{ github.ref_type }}" == "tag" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+#             echo "relevant=true" >> "$GITHUB_OUTPUT"
+#             exit 0
+#           fi
+#           base="${{ github.event.before }}"
+#           if [[ -z "$base" ]] || [[ "$base" =~ ^0+$ ]]; then
+#             base="$(git rev-list --max-parents=0 HEAD)"
+#           fi
+#           if git diff --quiet "$base" "${{ github.sha }}" -- src/webapp/ .github/workflows/build-images.yaml; then
+#             echo "relevant=false" >> "$GITHUB_OUTPUT"
+#             echo "::notice::no changes under src/webapp/ - skipping image build"
+#           else
+#             echo "relevant=true" >> "$GITHUB_OUTPUT"
+#           fi
 
-  build:
-    name: ${{ matrix.component }} (amd64 + arm64)
-    needs: changes
-    if: needs.changes.outputs.relevant == 'true'
-    runs-on: [self-hosted, homelab-runners]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - component: backend
-            context: src/webapp/backend
-            dockerfile: src/webapp/backend/Dockerfile
-            image: webapp-backend
-          - component: frontend
-            context: src/webapp/frontend
-            dockerfile: src/webapp/frontend/Dockerfile
-            image: webapp-frontend
-    env:
-      # Must match the buildkitd sidecar `--addr` in
-      # infrastructure/actions-runner-controller/helmrelease-runner-scale-set.yaml.
-      # (The pod already exports BUILDKIT_HOST, but the `env` context of a
-      # workflow cannot read process environment variables, so it is restated.)
-      BUILDKIT_HOST: tcp://127.0.0.1:1234
-    steps:
-      - uses: actions/checkout@v7
+#   build:
+#     name: ${{ matrix.component }} (amd64 + arm64)
+#     needs: changes
+#     if: needs.changes.outputs.relevant == 'true'
+#     runs-on: [self-hosted, homelab-runners]
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         include:
+#           - component: backend
+#             context: src/webapp/backend
+#             dockerfile: src/webapp/backend/Dockerfile
+#             image: webapp-backend
+#           - component: frontend
+#             context: src/webapp/frontend
+#             dockerfile: src/webapp/frontend/Dockerfile
+#             image: webapp-frontend
+#     env:
+#       # Must match the buildkitd sidecar `--addr` in
+#       # infrastructure/actions-runner-controller/helmrelease-runner-scale-set.yaml.
+#       # (The pod already exports BUILDKIT_HOST, but the `env` context of a
+#       # workflow cannot read process environment variables, so it is restated.)
+#       BUILDKIT_HOST: tcp://127.0.0.1:1234
+#     steps:
+#       - uses: actions/checkout@v7
 
-      - name: Detect source
-        id: detect
-        run: |
-          if [ -f "${{ matrix.dockerfile }}" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::${{ matrix.dockerfile }} does not exist yet - skipping"
-          fi
+#       - name: Detect source
+#         id: detect
+#         run: |
+#           if [ -f "${{ matrix.dockerfile }}" ]; then
+#             echo "present=true" >> "$GITHUB_OUTPUT"
+#           else
+#             echo "present=false" >> "$GITHUB_OUTPUT"
+#             echo "::notice::${{ matrix.dockerfile }} does not exist yet - skipping"
+#           fi
 
-      # docker/login-action needs the Docker CLI, which does not exist in a
-      # kubernetes-mode runner pod. buildx (standalone) only needs a config.json,
-      # so write one directly. GITHUB_TOKEN is short-lived (it dies with the job)
-      # and scoped to this repository's packages -- no PAT is involved.
-      - name: Authenticate to ghcr.io
-        if: steps.detect.outputs.present == 'true'
-        env:
-          GHCR_USER: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          cfg="${DOCKER_CONFIG:-$HOME/.docker}"
-          mkdir -p "$cfg"
-          auth=$(printf '%s:%s' "$GHCR_USER" "$GHCR_TOKEN" | base64 -w0)
-          printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "$auth" > "$cfg/config.json"
-          chmod 600 "$cfg/config.json"
+#       # docker/login-action needs the Docker CLI, which does not exist in a
+#       # kubernetes-mode runner pod. buildx (standalone) only needs a config.json,
+#       # so write one directly. GITHUB_TOKEN is short-lived (it dies with the job)
+#       # and scoped to this repository's packages -- no PAT is involved.
+#       - name: Authenticate to ghcr.io
+#         if: steps.detect.outputs.present == 'true'
+#         env:
+#           GHCR_USER: ${{ github.actor }}
+#           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           set -euo pipefail
+#           cfg="${DOCKER_CONFIG:-$HOME/.docker}"
+#           mkdir -p "$cfg"
+#           auth=$(printf '%s:%s' "$GHCR_USER" "$GHCR_TOKEN" | base64 -w0)
+#           printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "$auth" > "$cfg/config.json"
+#           chmod 600 "$cfg/config.json"
 
-      - name: Set up buildx against the in-pod BuildKit
-        if: steps.detect.outputs.present == 'true'
-        uses: docker/setup-buildx-action@v4
-        with:
-          driver: remote
-          # The sidecar is reachable only from inside this pod.
-          endpoint: ${{ env.BUILDKIT_HOST }}
+#       - name: Set up buildx against the in-pod BuildKit
+#         if: steps.detect.outputs.present == 'true'
+#         uses: docker/setup-buildx-action@v4
+#         with:
+#           driver: remote
+#           # The sidecar is reachable only from inside this pod.
+#           endpoint: ${{ env.BUILDKIT_HOST }}
 
-      - name: Container metadata (tags + OCI labels)
-        if: steps.detect.outputs.present == 'true'
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
-          tags: |
-            # Sortable tag consumed by topic 4's Flux ImagePolicy:
-            #   filterTags: '^main-(?P<ts>\d+)-[0-9a-f]+$'
-            #   policy: {numerical: {order: asc}}
-            type=raw,value=main-{{date 'YYYYMMDDHHmmss'}}-{{sha}},enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=short,prefix=sha-
-          labels: |
-            org.opencontainers.image.title=${{ matrix.image }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+#       - name: Container metadata (tags + OCI labels)
+#         if: steps.detect.outputs.present == 'true'
+#         id: meta
+#         uses: docker/metadata-action@v6
+#         with:
+#           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+#           tags: |
+#             # Sortable tag consumed by topic 4's Flux ImagePolicy:
+#             #   filterTags: '^main-(?P<ts>\d+)-[0-9a-f]+$'
+#             #   policy: {numerical: {order: asc}}
+#             type=raw,value=main-{{date 'YYYYMMDDHHmmss'}}-{{sha}},enable={{is_default_branch}}
+#             type=semver,pattern={{version}}
+#             type=semver,pattern={{major}}.{{minor}}
+#             type=sha,format=short,prefix=sha-
+#           labels: |
+#             org.opencontainers.image.title=${{ matrix.image }}
+#             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+#             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Build and push
-        if: steps.detect.outputs.present == 'true'
-        id: build
-        uses: docker/build-push-action@v7
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # Registry-backed cache: the runner pod is ephemeral, so the only cache
-          # that survives is the one stored next to the image in GHCR.
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:buildcache,mode=max
-          # Keep the pushed artifact a plain manifest list: Flux's ImageRepository
-          # scanner and `crane` handle attestation manifests poorly.
-          provenance: false
-          sbom: false
+#       - name: Build and push
+#         if: steps.detect.outputs.present == 'true'
+#         id: build
+#         uses: docker/build-push-action@v7
+#         with:
+#           context: ${{ matrix.context }}
+#           file: ${{ matrix.dockerfile }}
+#           platforms: linux/amd64,linux/arm64
+#           push: true
+#           tags: ${{ steps.meta.outputs.tags }}
+#           labels: ${{ steps.meta.outputs.labels }}
+#           # Registry-backed cache: the runner pod is ephemeral, so the only cache
+#           # that survives is the one stored next to the image in GHCR.
+#           cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:buildcache
+#           cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:buildcache,mode=max
+#           # Keep the pushed artifact a plain manifest list: Flux's ImageRepository
+#           # scanner and `crane` handle attestation manifests poorly.
+#           provenance: false
+#           sbom: false
 
-      - name: Job summary
-        if: steps.detect.outputs.present == 'true'
-        run: |
-          {
-            echo "### ${{ matrix.image }}"
-            echo
-            echo '```'
-            echo "digest: ${{ steps.build.outputs.digest }}"
-            echo "tags:"
-            echo "${{ steps.meta.outputs.tags }}"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+#       - name: Job summary
+#         if: steps.detect.outputs.present == 'true'
+#         run: |
+#           {
+#             echo "### ${{ matrix.image }}"
+#             echo
+#             echo '```'
+#             echo "digest: ${{ steps.build.outputs.digest }}"
+#             echo "tags:"
+#             echo "${{ steps.meta.outputs.tags }}"
+#             echo '```'
+#           } >> "$GITHUB_STEP_SUMMARY"
