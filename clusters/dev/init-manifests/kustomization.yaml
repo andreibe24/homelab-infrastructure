@@ -4,5 +4,5 @@ kind: Kustomization
 namespace: flux-system
 resources:
   - infrastructure-imported.yaml
+  - infrastructure.yaml
   - apps.yaml
-  # - infrastructure.yaml
