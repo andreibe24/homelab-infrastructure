@@ -1,0 +1,30 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: cilium # namespace omitted: defaults to the HelmRelease's own
+  # cilium operator updates the crds once new ones are available
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: false # never auto-uninstall/rollback the CNI
+  values:
+    kubeProxyReplacement: true
+    k8sServiceHost: dev-control-plane
+    k8sServicePort: 6443
+    ipam:
+      mode: kubernetes
+    gatewayAPI:
+      enabled: true
+      hostNetwork:
+        enabled: true
+    operator:
+      replicas: 1
