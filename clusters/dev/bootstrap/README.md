@@ -21,6 +21,8 @@ helm install cilium cilium/cilium -n kube-system \
 ## Flux
 
 ```bash
+kubectl create ns flux-system
+
 flux-operator create secret basic-auth git-creds \
   --namespace=flux-system --username=<user> --password=<token>
 
