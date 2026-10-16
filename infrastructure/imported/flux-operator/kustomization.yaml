@@ -13,4 +13,4 @@ generatorOptions:
 resources:
   - flux-operator.ocirepository.yaml
   - flux-operator.helmrelease.yaml
-  - flux-operator.ciliumnetworkpolicy.yaml
+  - flux-operator-ingress.ciliumnetworkpolicy.yaml
