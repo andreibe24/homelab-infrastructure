@@ -14,3 +14,4 @@ resources:
   - flux-operator.ocirepository.yaml
   - flux-operator.helmrelease.yaml
   - flux-operator-ingress.ciliumnetworkpolicy.yaml
+  - flux-viewers.clusterrolebinding.yaml
