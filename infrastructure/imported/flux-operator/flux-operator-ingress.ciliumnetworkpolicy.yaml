@@ -1,7 +1,8 @@
 ---
-# Allows traffic from Cilium Gateway API (Envoy proxy).
-# Standard K8s NetworkPolicy namespaceSelector: {} does not match Cilium's
-# internal 'reserved:ingress' entity, causing connection timeouts without this.
+# Allows traffic from Cilium Gateway API (known as 'reserved:ingress').
+# flux-operator-web's (NetworkPolicy) "ingress.from.namespaceSelector:{}" blocks external access.
+# Therefore, it doesn't match Cilium's internal 'reserved:ingress' identity, 
+# causing connection timeouts without this.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -11,7 +12,7 @@ spec:
     matchLabels:
       app.kubernetes.io/name: flux-operator
   ingress:
-    - fromEntities:
+    - fromEntities: # only reserved cilium ids are supported entities. More identities here: https://docs.cilium.io/en/stable/gettingstarted/terminology/#special-identities
         - ingress
       toPorts:
         - ports:
