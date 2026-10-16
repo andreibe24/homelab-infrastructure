@@ -1,6 +1,0 @@
-__pycache__/
-*.py[cod]
-.venv/
-staticfiles/
-dev-certs/
-*.sqlite3
