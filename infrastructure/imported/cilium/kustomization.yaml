@@ -4,6 +4,12 @@ kind: Kustomization
 namespace: kube-system
 commonAnnotations:
   kustomize.toolkit.fluxcd.io/prune: disabled
+configMapGenerator:
+  - name: cilium-custom-helmvalues
+    files:
+      - custom.helmvalues.yaml
+generatorOptions:
+  disableNameSuffixHash: true # keeps the name stable for valuesFrom
 resources:
   - cilium.ocirepository.yaml
   - cilium.helmrelease.yaml

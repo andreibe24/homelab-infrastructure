@@ -16,15 +16,6 @@ spec:
     remediation:
       retries: 3
       remediateLastFailure: false # never auto-uninstall/rollback the CNI
-  values:
-    kubeProxyReplacement: true
-    k8sServiceHost: dev-control-plane
-    k8sServicePort: 6443
-    ipam:
-      mode: kubernetes
-    gatewayAPI:
-      enabled: true
-      hostNetwork:
-        enabled: true
-    operator:
-      replicas: 1
+  valuesFrom:
+    - kind: ConfigMap
+      name: cilium-custom-helmvalues

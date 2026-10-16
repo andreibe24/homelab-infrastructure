@@ -1,0 +1,13 @@
+web:
+  config:
+    authentication:
+      type: Anonymous
+      anonymous:
+        username: flux
+        groups: [flux-viewers]
+  httpRoute:
+    enabled: true
+    parentRefs:
+      - name: external
+        namespace: gateway
+    hostnames: ["flux.localhost"]

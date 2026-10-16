@@ -95,7 +95,7 @@ spec:
   interval: 10m
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
   git:
     checkout:
       ref:

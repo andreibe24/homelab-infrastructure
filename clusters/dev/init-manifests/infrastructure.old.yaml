@@ -13,7 +13,7 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -31,7 +31,7 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
   # ClusterIssuer/Certificate need cert-manager's CRDs, which only exist once
   # cert-manager-release is actually Ready (not just applied).
 ---
@@ -51,7 +51,7 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
   healthChecks:
     - apiVersion: cert-manager.io/v1
       kind: Certificate
@@ -82,7 +82,7 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -100,7 +100,7 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
   # AuthorizationPolicy/MeshTLSAuthentication need the Linkerd CRDs installed
   # by linkerd-release's HelmReleases.
 ---
@@ -118,7 +118,7 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
   # Single stage: the two HelmReleases order themselves via
   # HelmRelease.spec.dependsOn, and NetworkPolicy/RBAC/DaemonSet have no CRD
   # dependency, so nothing here needs to wait on a separate Kustomization. Not
@@ -144,7 +144,7 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
   # Not dependent on cert-manager/linkerd: kube-prometheus-stack installs fine
   # unmeshed; the observability Namespace's `linkerd.io/inject: enabled`
   # annotation only takes effect once linkerd-release happens to be ready too,
@@ -166,7 +166,7 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
   # ServiceMonitor/PodMonitor/PrometheusRule/AlertmanagerConfig need the
   # Prometheus Operator CRDs bundled in kube-prometheus-stack.
 ---
@@ -184,5 +184,5 @@ spec:
   wait: true
   sourceRef:
     kind: GitRepository
-    name: flux-system
+    name: homelab-infrastructure
   # Single stage: Renovate ships no CRDs and needs no custom resources.

@@ -25,6 +25,7 @@ spec:
     domain: cluster.local
   sync:
     kind: GitRepository
+    name: homelab-infrastructure
     url: https://github.com/andreibe24/homelab-infrastructure.git
     ref: refs/heads/main
     path: clusters/dev/init-manifests
