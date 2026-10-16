@@ -7,7 +7,7 @@ commonAnnotations:
 configMapGenerator:
   - name: flux-operator-custom-helmvalues
     files:
-      - custom.helmvalues.yaml
+      - values.yaml=custom.helmvalues.yaml # key=file
 generatorOptions:
   disableNameSuffixHash: true # keeps the name stable for valuesFrom
 resources:
