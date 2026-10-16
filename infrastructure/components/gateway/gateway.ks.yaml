@@ -5,6 +5,8 @@ metadata:
   name: gateway
   namespace: gateway
 spec:
+  dependsOn:
+    - name: cert-manager-issuers
   interval: 1h
   retryInterval: 1m
   timeout: 10m

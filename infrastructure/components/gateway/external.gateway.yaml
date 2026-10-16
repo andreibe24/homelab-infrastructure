@@ -6,17 +6,36 @@ metadata:
 spec:
   gatewayClassName: cilium
   listeners:
-    - name: http
+    - name: http-wildcard
       protocol: HTTP
       port: 8080
       hostname: "*.localhost"
       allowedRoutes:
         namespaces:
           from: All
-    - name: https
+    - name: http-apex
+      protocol: HTTP
+      port: 8080
+      hostname: "localhost"
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-wildcard
       protocol: HTTPS
       port: 8443
       hostname: "*.localhost"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: localhost-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-apex
+      protocol: HTTPS
+      port: 8443
+      hostname: "localhost"
       tls:
         mode: Terminate
         certificateRefs:
