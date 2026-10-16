@@ -1,6 +1,8 @@
 My Todo List:
 
-# Kubernetes setup with fluxcd
+# Security
+## cilium -> network policies
+## Falco policies for malware detection + alerts
 
 # mutual TLS -> Linkerd 
 
@@ -45,8 +47,6 @@ buildkit or kaniko for multi-arch, maybe somthing docker-bake style?) and push a
 ## linting
 
 ## testing
-
-# CD with Fluxcd
 
 ## webapp with http/3 (quic -> udp) + website (frontend):
 - django backend with aioquic and Hypercorn
