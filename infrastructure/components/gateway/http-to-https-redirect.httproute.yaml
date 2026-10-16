@@ -6,12 +6,9 @@ metadata:
 spec:
   parentRefs:
     - name: external
-      sectionName: http-wildcard
-    - name: external
-      sectionName: http-apex
-  # Omitting 'hostnames' attaches this route to all hostnames accepted by the referenced
-  # HTTP listeners (*.localhost and localhost). This allows Envoy to catch and redirect
-  # all incoming HTTP requests regardless of host headers or non-standard port suffixes (:8080).
+      sectionName: http
+  # Omitting 'hostnames' allows this redirect route to match any host hitting the 'http' listener.
+  # Combined with the catch-all HTTP listener, this cleanly redirects all HTTP requests to HTTPS.
   rules:
     - filters:
         - type: RequestRedirect

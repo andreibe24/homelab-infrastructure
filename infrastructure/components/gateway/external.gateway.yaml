@@ -6,17 +6,12 @@ metadata:
 spec:
   gatewayClassName: cilium
   listeners:
-    - name: http-wildcard
+    # Omitting 'hostname' on the HTTP listener creates a wildcard domain match ("*") in Envoy.
+    # This ensures any HTTP request on port 8080 (including non-standard host headers with port suffixes
+    # like 'flux.localhost:8080') is captured and redirected to HTTPS on port 8443.
+    - name: http
       protocol: HTTP
       port: 8080
-      hostname: "*.localhost"
-      allowedRoutes:
-        namespaces:
-          from: All
-    - name: http-apex
-      protocol: HTTP
-      port: 8080
-      hostname: "localhost"
       allowedRoutes:
         namespaces:
           from: All
