@@ -1,4 +1,7 @@
 ---
+# Allows traffic from Cilium Gateway API (Envoy proxy).
+# Standard K8s NetworkPolicy namespaceSelector: {} does not match Cilium's
+# internal 'reserved:ingress' entity, causing connection timeouts without this.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
