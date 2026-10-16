@@ -10,4 +10,5 @@ web:
     parentRefs:
       - name: external
         namespace: gateway
+        sectionName: https-wildcard
     hostnames: ["flux.localhost"]

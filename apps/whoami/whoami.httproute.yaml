@@ -7,6 +7,7 @@ spec:
   parentRefs:
     - name: external
       namespace: gateway
+      sectionName: https-wildcard
   hostnames: ["whoami.localhost"]
   rules:
     - backendRefs:

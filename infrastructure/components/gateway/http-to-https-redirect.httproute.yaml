@@ -9,6 +9,9 @@ spec:
       sectionName: http-wildcard
     - name: external
       sectionName: http-apex
+  hostnames:
+    - "*.localhost"
+    - "localhost"
   rules:
     - filters:
         - type: RequestRedirect
