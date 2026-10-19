@@ -1,0 +1,43 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: falcosidekick-critical
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: falcosidekick
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    fullnameOverride: falcosidekick-critical
+    webui:
+      enabled: false
+    config:
+      # Custom fields appended to every alert (visible in Web UI and Slack notifications)
+      customfields: "cluster:dev"
+      # Slack webhook URL loaded securely from SOPS-encrypted Secret falcosidekick-slack
+      extraEnv:
+        - name: SLACK_WEBHOOKURL
+          valueFrom:
+            secretKeyRef:
+              name: falcosidekick-slack
+              key: SLACK_WEBHOOKURL_MINIMUMPRIORITY_CRITICAL
+      # Dedicated Slack configuration for critical severity alerts (Critical / Alert / Emergency)
+      slack:
+        channel: "#falco-minimumpriority-critical"
+        minimumpriority: "critical"
+        outputformat: "all"
+        messageformat: >-
+          :rotating_light: *[CRITICAL FALCO ALERT] [Cluster: {{ index .OutputFields "cluster" }}]*
+          *Rule:* `{{ .Rule }}`
+          *Details:* {{ .Output }}
+          *Hostname:* {{ .Hostname }}
+          *Tags:* {{ .Tags }}

@@ -1,0 +1,158 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: falco
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: falco
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    # Use modern eBPF driver with CO-RE / BTF for modern Linux kernels without compiling modules
+    driver:
+      kind: modern_ebpf
+
+    # Display Falco logs immediately
+    tty: true
+
+    falco:
+      rules_files:
+        - /etc/falco/falco_rules.yaml
+        - /etc/falco/falco_rules.local.yaml
+        - /rulesfiles
+        - /etc/falco/rules.d
+
+    # Artifact lifecycle management: install official core rules and incubating rules (including malware rulesets)
+    falcoctl:
+      artifact:
+        install:
+          enabled: true
+          refs:
+            - falco-rules:5
+            - falco-incubating-rules:5
+        follow:
+          enabled: true
+          refs:
+            - falco-rules:5
+            - falco-incubating-rules:5
+
+    # Custom security policies detecting malicious behaviors in the cluster
+    customRules:
+      rules-malware.yaml: |-
+        # Detect common cryptomining process execution
+        - rule: Detect Crypto Miner Execution
+          desc: Detects execution of known cryptomining software
+          condition: >
+            spawned_process and (
+              proc.name in (xmrig, minerd, cpuminer, ccminer, ethminer, claymore, xmr-stak) or
+              proc.cmdline contains "stratum+tcp://" or
+              proc.cmdline contains "stratum+ssl://" or
+              proc.cmdline contains "monero" or
+              proc.cmdline contains "nicehash"
+            )
+          output: >
+            Malicious crypto miner execution detected (user=%user.name user_loginuid=%user.loginuid
+            proc=%proc.name cmdline=%proc.cmdline parent=%proc.pname container_id=%container.id
+            container_name=%container.name image=%container.image.repository)
+          priority: CRITICAL
+          tags: [malware, crypto_miner, mitre_execution]
+
+        # Detect reverse shells spawned from containers
+        - rule: Reverse Shell Spawned in Container
+          desc: Detects an outbound network connection initiated by an interactive shell process
+          condition: >
+            evt.type = connect and evt.dir = < and
+            proc.name in (sh, bash, dash, ksh, zsh, ash) and
+            container
+          output: >
+            Possible reverse shell initiated from container (proc=%proc.name cmdline=%proc.cmdline
+            connection=%fd.name user=%user.name container_id=%container.id container_name=%container.name
+            image=%container.image.repository)
+          priority: CRITICAL
+          tags: [malware, reverse_shell, mitre_execution]
+
+        # Detect downloading and executing external script directly via pipe
+        - rule: Download and Pipe Execution
+          desc: Detects downloading remote scripts via curl/wget directly piped into execution shell
+          condition: >
+            spawned_process and (
+              (proc.cmdline contains "curl " or proc.cmdline contains "wget ") and
+              (proc.cmdline contains "| sh" or proc.cmdline contains "| bash" or proc.cmdline contains "| python")
+            )
+          output: >
+            Insecure download and execution via pipe detected (proc=%proc.name cmdline=%proc.cmdline
+            parent=%proc.pname user=%user.name container_id=%container.id container_name=%container.name)
+          priority: WARNING
+          tags: [malware, execution, mitre_execution]
+
+        # Detect process execution from temporary directories (/tmp, /dev/shm)
+        - rule: Execution from Suspicious Directory
+          desc: Detects binaries executed from temporary or shared memory directories
+          condition: >
+            spawned_process and container and (
+              proc.exepath startswith "/tmp/" or
+              proc.exepath startswith "/dev/shm/" or
+              proc.exepath startswith "/var/tmp/"
+            )
+          output: >
+            Binary executed from temporary directory (proc=%proc.name path=%proc.exepath
+            cmdline=%proc.cmdline container_id=%container.id container_name=%container.name)
+          priority: WARNING
+          tags: [malware, defense_evasion, mitre_defense_evasion]
+
+        # Detect attempts to clear shell history or system logs
+        - rule: Clear Shell History or System Logs
+          desc: Detects attempts to clear command history or delete system audit logs
+          condition: >
+            spawned_process and (
+              proc.name in (rm, truncate) and (
+                proc.cmdline contains "/var/log" or
+                proc.cmdline contains ".bash_history" or
+                proc.cmdline contains ".ash_history"
+              ) or
+              proc.cmdline contains "history -c"
+            )
+          output: >
+            Log clearing or history deletion attempt detected (proc=%proc.name cmdline=%proc.cmdline
+            parent=%proc.pname user=%user.name container_id=%container.id container_name=%container.name)
+          priority: WARNING
+          tags: [malware, defense_evasion, mitre_defense_evasion]
+
+    # Falcosidekick alert routing and Web UI
+    falcosidekick:
+      enabled: true
+      webui:
+        enabled: true
+      config:
+        # Custom fields appended to every alert (visible in Web UI and Slack notifications)
+        customfields: "cluster:dev"
+        # Daisy-chain: forward all events to falcosidekick-critical for dedicated critical channel routing
+        webhook:
+          address: "http://falcosidekick-critical:2801"
+        # Slack webhook URL loaded securely from SOPS-encrypted Secret falcosidekick-slack
+        extraEnv:
+          - name: SLACK_WEBHOOKURL
+            valueFrom:
+              secretKeyRef:
+                name: falcosidekick-slack
+                key: SLACK_WEBHOOKURL_MINIMUMPRIORITY_WARNING
+        # Slack configuration for warning/general alerts
+        slack:
+          channel: "#falco-minimumpriority-warning"
+          minimumpriority: "warning"
+          outputformat: "all"
+          messageformat: >-
+            :warning: *[Falco Alert - {{ .Priority | upper }}] [Cluster: {{ index .OutputFields "cluster" }}]*
+            *Rule:* `{{ .Rule }}`
+            *Details:* {{ .Output }}
+            *Hostname:* {{ .Hostname }}
+            *Tags:* {{ .Tags }}

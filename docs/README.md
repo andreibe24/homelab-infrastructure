@@ -204,3 +204,39 @@ Guidelines:
 ### Skill (Project)
 
 `.claude/skills/<name>/SKILL.md`
+
+
+# Secret management (Sops) with encryption algorithm (age)
+
+How to generate age key pair:
+```bash
+mkdir -p ~/.config/sops/age
+age-keygen -o ~/.config/sops/age/keys.txt
+```
+>If you need more than one age pair, sops supports it. Add the new private key into `keys.txt`.
+
+How to encrypt a file (give *public* key there):
+```bash
+# Specify sops configs as sops cli options:
+sops --encrypt \
+  --age age1234... \
+  --encrypted-regex '^(data|stringData)$' \
+  --in-place <filename>
+# OR create .sops file, that applies sops configurations to the files located in the same dir as .sops file:
+# cat .sops.yaml 
+#creation_rules:
+#  - path_regex: .*\.secret\.yaml$
+#    encrypted_regex: ^(data|stringData)$
+#    age: age1234...
+sops --encrypt --in-place <filename>
+```
+
+How to edit an ecrypted file:
+```bash
+sops <filename>
+```
+
+How to view/decrypt an encrypted file:
+```bash
+sops --decrypt <filename>
+```

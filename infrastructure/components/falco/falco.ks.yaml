@@ -1,0 +1,24 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: falco
+  namespace: falco
+spec:
+  dependsOn:
+    - name: gateway
+      namespace: gateway
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  path: ./infrastructure/components/falco
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: homelab-infrastructure
+    namespace: flux-system

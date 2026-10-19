@@ -7,3 +7,5 @@ resources:
   - ./cert-manager/cert-manager-issuers.ks.yaml
   - ./gateway/gateway.namespace.yaml
   - ./gateway/gateway.ks.yaml
+  - ./falco/falco.namespace.yaml
+  - ./falco/falco.ks.yaml

@@ -4,6 +4,8 @@ My Todo List:
 ## cilium -> network policies
 ## Falco policies for malware detection + alerts
 
+# whilist: who is allowed to access apps (k8s) externally
+
 # mutual TLS -> Linkerd 
 
 Have communication encrypted between application pods.
