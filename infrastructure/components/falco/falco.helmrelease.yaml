@@ -25,27 +25,25 @@ spec:
     tty: true
 
     falco:
+      # Evaluate all matching rules instead of stopping at the first generic match
+      rule_matching: all
       rules_files:
         - /etc/falco/falco_rules.yaml
-        - /etc/falco/falco_rules.local.yaml
-        - /rulesfiles
         - /etc/falco/rules.d
 
-    # Artifact lifecycle management: install official core rules and incubating rules (including malware rulesets)
+    # /etc/falco/falco_rules.yaml: Artifact lifecycle management: install official standard stable rules maintained by the CNCF Falco project
     falcoctl:
       artifact:
         install:
           enabled: true
           refs:
             - falco-rules:5
-            - falco-incubating-rules:5
         follow:
           enabled: true
           refs:
             - falco-rules:5
-            - falco-incubating-rules:5
 
-    # Custom security policies detecting malicious behaviors in the cluster
+    # /etc/falco/rules.d: Custom security policies detecting malicious behaviors in the cluster
     customRules:
       rules-malware.yaml: |-
         # Detect common cryptomining process execution
