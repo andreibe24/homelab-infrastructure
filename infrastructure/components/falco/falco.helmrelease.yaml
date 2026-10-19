@@ -70,7 +70,7 @@ spec:
         - rule: Reverse Shell Spawned in Container
           desc: Detects an outbound network connection initiated by an interactive shell process
           condition: >
-            evt.type = connect and evt.dir = < and
+            evt.type = connect and
             proc.name in (sh, bash, dash, ksh, zsh, ash) and
             container
           output: >
@@ -151,7 +151,7 @@ spec:
           minimumpriority: "warning"
           outputformat: "all"
           messageformat: >-
-            :warning: *[Falco Alert - {{ .Priority | upper }}] [Cluster: {{ index .OutputFields "cluster" }}]*
+            :warning: *[Falco Alert - {{ .Priority }}] [Cluster: {{ index .OutputFields "cluster" }}]*
             *Rule:* `{{ .Rule }}`
             *Details:* {{ .Output }}
             *Hostname:* {{ .Hostname }}
