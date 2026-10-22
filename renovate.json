@@ -7,13 +7,22 @@
   "major": {
     "automerge": false
   },
-  "enabledManagers": ["flux", "github-actions", "kubernetes", "mise"],
+  "enabledManagers": ["flux", "github-actions", "kubernetes", "mise", "custom.regex"],
   "flux": {
     "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.ya?ml$/"]
   },
   "kubernetes": {
     "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.ya?ml$/"]
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.sh$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+[A-Z0-9_]+_VERSION=\"(?<currentValue>[^\"]+)\""
+      ]
+    }
+  ],
   "mise": {
     "managerFilePatterns": ["/^docs\\/config\\.toml$/"]
   }
