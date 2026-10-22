@@ -8,4 +8,10 @@ resources:
   - ./falcosidekick.ocirepository.yaml
   - ./falcosidekick-critical.helmrelease.yaml
   - ./falcosidekick-slack.secret.yaml
+  - networkpolicy-default-deny.yaml
+  - networkpolicy-allow-same-namespace.yaml
+  - egress-dns.ciliumnetworkpolicy.yaml
+  - egress-kube-apiserver.ciliumnetworkpolicy.yaml
+  - egress-external-services.ciliumnetworkpolicy.yaml
+  - falco-ui-ingress.ciliumnetworkpolicy.yaml
   - ./falco-ui.httproute.yaml
