@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-http3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-http3
+  template:
+    metadata:
+      labels:
+        app: sample-http3
+    spec:
+      containers:
+        - name: caddy
+          image: caddy:2-alpine
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: quic
+              containerPort: 443
+              protocol: UDP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          volumeMounts:
+            - name: config
+              mountPath: /etc/caddy/Caddyfile
+              subPath: Caddyfile
+              readOnly: true
+            - name: tls
+              mountPath: /etc/caddy/tls
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: sample-http3
+        - name: tls
+          secret:
+            secretName: sample-http3-tls

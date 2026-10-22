@@ -39,3 +39,9 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: https-quic
+      protocol: UDP
+      port: 8443
+      allowedRoutes:
+        namespaces:
+          from: All

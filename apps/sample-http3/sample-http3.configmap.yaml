@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sample-http3
+data:
+  Caddyfile: |
+    http://:8080 {
+      header Alt-Svc "h3=\":8443\"; ma=86400"
+      respond "Sample app: HTTP/3 over QUIC\n"
+    }
+
+    https://sample-http3.localhost {
+      tls /etc/caddy/tls/tls.crt /etc/caddy/tls/tls.key
+      respond "Sample app: HTTP/3 over QUIC\n"
+    }
