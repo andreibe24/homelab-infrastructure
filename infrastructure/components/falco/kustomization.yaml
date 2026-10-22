@@ -7,5 +7,4 @@ resources:
   - ./falco.helmrelease.yaml
   - ./falcosidekick.ocirepository.yaml
   - ./falcosidekick-critical.helmrelease.yaml
-  - ./falcosidekick-slack.secret.yaml
   - ./falco-ui.httproute.yaml
