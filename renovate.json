@@ -3,6 +3,10 @@
   "extends": ["config:recommended"],
   "onboarding": false,
   "branchPrefix": "renovate/",
+  "automerge": true,
+  "major": {
+    "automerge": false
+  },
   "enabledManagers": ["flux", "github-actions", "kubernetes", "mise"],
   "flux": {
     "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.ya?ml$/"]
