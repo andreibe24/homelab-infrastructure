@@ -1,0 +1,16 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "onboarding": false,
+  "branchPrefix": "renovate/",
+  "enabledManagers": ["flux", "github-actions", "kubernetes", "mise"],
+  "flux": {
+    "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.ya?ml$/"]
+  },
+  "kubernetes": {
+    "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.ya?ml$/"]
+  },
+  "mise": {
+    "managerFilePatterns": ["/^docs\\/config\\.toml$/"]
+  }
+}
