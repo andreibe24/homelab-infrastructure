@@ -1,13 +1,21 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "onboarding": false,
   "branchPrefix": "renovate/",
   "automerge": true,
-  "platformAutomerge": true,
-  "major": {
-    "automerge": false
-  },
+  "automergeType": "pr",
+  "platformAutomerge": false,
+  "dependencyDashboard": false,
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
+  ],
   "enabledManagers": ["flux", "github-actions", "kubernetes", "mise", "custom.regex"],
   "flux": {
     "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.ya?ml$/"]
