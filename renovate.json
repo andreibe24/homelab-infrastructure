@@ -4,6 +4,7 @@
   "onboarding": false,
   "branchPrefix": "renovate/",
   "automerge": true,
+  "platformAutomerge": true,
   "major": {
     "automerge": false
   },
