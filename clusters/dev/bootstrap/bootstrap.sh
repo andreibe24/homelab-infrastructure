@@ -13,7 +13,7 @@ KIND_CONFIG="kind.cluster.yaml"
 KUBECONFIG_PATH="$HOME/.kube/configs/dev-cluster.yaml"
 
 # renovate: datasource=github-releases depName=kubernetes-sigs/gateway-api
-GATEWAY_API_VERSION="v1.6.1"
+GATEWAY_API_VERSION="v1.6.3"
 # renovate: datasource=docker depName=quay.io/cilium/charts/cilium
 CILIUM_VERSION="1.20.2"
 # renovate: datasource=docker depName=ghcr.io/controlplaneio-fluxcd/charts/flux-operator
