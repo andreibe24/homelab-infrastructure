@@ -6,4 +6,4 @@ resources:
   - infrastructure-imported.ks.yaml
   - infrastructure.ks.yaml
   - apps.ks.yaml
-  - ./secrets/falcosidekick-slack.secret.yaml
+  - ./secrets
