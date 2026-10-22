@@ -5,6 +5,7 @@ namespace: whoami
 resources:
   - networkpolicy-default-deny.yaml
   - networkpolicy-allow-same-namespace.yaml
+  - egress-dns.ciliumnetworkpolicy.yaml
   - whoami-ingress.ciliumnetworkpolicy.yaml
   - whoami.deployment.yaml
   - whoami.service.yaml

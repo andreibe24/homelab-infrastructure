@@ -7,4 +7,6 @@ resources:
   - cert-manager.helmrelease.yaml
   - networkpolicy-default-deny.yaml
   - networkpolicy-allow-same-namespace.yaml
+  - egress-dns.ciliumnetworkpolicy.yaml
+  - egress-kube-apiserver.ciliumnetworkpolicy.yaml
   - cert-manager-host-ingress.ciliumnetworkpolicy.yaml
