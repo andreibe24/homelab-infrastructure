@@ -3,7 +3,7 @@
   "extends": ["config:recommended"],
   "branchPrefix": "renovate/",
   "automerge": true,
-  "platformAutomerge": true,
+  "platformAutomerge": false,
   "major": {
     "automerge": false
   },
