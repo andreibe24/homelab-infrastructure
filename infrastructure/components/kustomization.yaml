@@ -9,3 +9,5 @@ resources:
   - ./gateway/gateway.ks.yaml
   - ./falco/falco.namespace.yaml
   - ./falco/falco.ks.yaml
+  - ./monitoring/monitoring.namespace.yaml
+  - ./monitoring/monitoring.ks.yaml
