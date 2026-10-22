@@ -240,3 +240,7 @@ How to view/decrypt an encrypted file:
 ```bash
 sops --decrypt <filename>
 ```
+
+# Renovate
+
+The daily Renovate workflow requires a GitHub App installed on this repository with **Contents: Read and write** and **Pull requests: Read and write** permissions. Add its ID and private key as repository secrets named `RENOVATE_APP_ID` and `RENOVATE_APP_PRIVATE_KEY`. The workflow also supports manual runs from the `main` branch.
