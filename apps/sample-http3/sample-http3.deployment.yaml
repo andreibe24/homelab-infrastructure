@@ -13,6 +13,16 @@ spec:
       labels:
         app: sample-http3
     spec:
+      initContainers:
+        - name: generate-download
+          image: caddy:2-alpine
+          command:
+            - /bin/sh
+            - -c
+            - dd if=/dev/urandom of=/srv/large.bin bs=1M count=8
+          volumeMounts:
+            - name: data
+              mountPath: /srv
       containers:
         - name: caddy
           image: caddy:2-alpine
@@ -24,8 +34,7 @@ spec:
               containerPort: 443
               protocol: UDP
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: http
           volumeMounts:
             - name: config
@@ -35,8 +44,20 @@ spec:
             - name: tls
               mountPath: /etc/caddy/tls
               readOnly: true
+            - name: data
+              mountPath: /srv
+              readOnly: true
+            - name: index
+              mountPath: /srv/index.html
+              subPath: index.html
+              readOnly: true
       volumes:
         - name: config
+          configMap:
+            name: sample-http3
+        - name: data
+          emptyDir: {}
+        - name: index
           configMap:
             name: sample-http3
         - name: tls

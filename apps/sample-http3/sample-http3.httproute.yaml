@@ -10,6 +10,7 @@ spec:
       sectionName: https-wildcard
   hostnames:
     - sample-http3.localhost
+    - sample-http3-h2.localhost
   rules:
     - backendRefs:
         - name: sample-http3
