@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - ./open-webui/open-webui.namespace.yaml
   - ./open-webui/open-webui.ks.yaml
+  - ./openwebui/rag/rag.ks.yaml
   - ./whoami/whoami.namespace.yaml
   - ./whoami/whoami.ks.yaml

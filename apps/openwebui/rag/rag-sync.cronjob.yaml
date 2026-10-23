@@ -1,0 +1,74 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: open-webui-rag-sync
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          automountServiceAccountToken: false
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: sync
+              image: python:3.13-alpine
+              command:
+                - python
+                - /sync/sync.py
+              env:
+                - name: OPEN_WEBUI_URL
+                  value: http://open-webui
+                - name: OPEN_WEBUI_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: open-webui-rag-api
+                      key: token
+                - name: RAG_KNOWLEDGE_BASE_NAME
+                  value: Homelab Documents
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+                - name: HOME
+                  value: /tmp
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              volumeMounts:
+                - name: sync-script
+                  mountPath: /sync
+                  readOnly: true
+                - name: documents
+                  mountPath: /documents
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: sync-script
+              configMap:
+                name: rag-sync-script
+            - name: documents
+              configMap:
+                name: rag-documents
+            - name: tmp
+              emptyDir: {}

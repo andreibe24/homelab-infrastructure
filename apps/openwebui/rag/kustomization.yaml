@@ -1,0 +1,13 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: open-webui
+resources:
+  - rag-sync.cronjob.yaml
+configMapGenerator:
+  - name: rag-sync-script
+    files:
+      - sync.py
+  - name: rag-documents
+    files:
+      - documents/sample-rag-document.md
