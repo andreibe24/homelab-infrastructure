@@ -61,9 +61,11 @@ def register(request):
             {"error": "Enter a username and password."}, status=400
         )
     try:
-        validate_password(password)
+        user_model = get_user_model()
+        user_model._meta.get_field("username").clean(username, None)
+        validate_password(password, user=user_model(username=username))
         with transaction.atomic():
-            user = get_user_model().objects.create_user(
+            user = user_model.objects.create_user(
                 username=username, password=password
             )
     except ValidationError as error:

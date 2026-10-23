@@ -31,6 +31,15 @@ class ChatApiTests(TestCase):
         self.assertEqual(response.json()["username"], "new-camper")
         self.assertEqual(self.client.get("/api/me/").json()["username"], "new-camper")
 
+    def test_registration_rejects_non_string_credentials(self):
+        response = self.client.post(
+            "/api/register/",
+            data=json.dumps({"username": 42, "password": "strong-password"}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+
     def test_authenticated_user_can_post_and_read_messages(self):
         self.client.force_login(self.user)
         response = self.client.post(
