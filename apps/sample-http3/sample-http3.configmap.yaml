@@ -5,6 +5,12 @@ metadata:
   name: sample-http3
 data:
   Caddyfile: |
+    {
+      servers {
+        strict_sni_host on
+      }
+    }
+
     http://sample-http3.localhost:8080 {
       root * /srv
       header Alt-Svc "h3=\":8443\"; ma=86400"
@@ -25,6 +31,9 @@ data:
     https://sample-http3.localhost {
       tls /etc/caddy/tls/tls.crt /etc/caddy/tls/tls.key
       root * /srv
+      header Access-Control-Allow-Origin "*"
+      header Access-Control-Expose-Headers "Content-Length"
+      header Timing-Allow-Origin "*"
       file_server
     }
   index.html: |

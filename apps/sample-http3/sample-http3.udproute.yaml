@@ -7,7 +7,7 @@ spec:
   parentRefs:
     - name: external
       namespace: gateway
-      sectionName: https-quic
+      sectionName: sample-http3-quic
   rules:
     - backendRefs:
         - name: sample-http3

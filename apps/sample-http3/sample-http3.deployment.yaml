@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sample-http3
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
@@ -19,10 +21,13 @@ spec:
           command:
             - /bin/sh
             - -c
-            - dd if=/dev/urandom of=/srv/large.bin bs=1M count=8
+            - dd if=/dev/urandom of=/srv/large.bin bs=1M count=8 && cp /index/index.html /srv/index.html
           volumeMounts:
             - name: data
               mountPath: /srv
+            - name: index
+              mountPath: /index
+              readOnly: true
       containers:
         - name: caddy
           image: caddy:2-alpine
@@ -46,10 +51,6 @@ spec:
               readOnly: true
             - name: data
               mountPath: /srv
-              readOnly: true
-            - name: index
-              mountPath: /srv/index.html
-              subPath: index.html
               readOnly: true
       volumes:
         - name: config
