@@ -5,6 +5,6 @@ metadata:
   name: reflector
 spec:
   interval: 1h
-  url: ghcr.io/emberstack/helm-charts/reflector
+  url: oci://ghcr.io/emberstack/helm-charts/reflector
   ref:
     tag: 10.0.65
