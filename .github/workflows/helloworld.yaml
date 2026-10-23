@@ -9,4 +9,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Say hello
-        run: echo "Hello, World! Triggered by PR #${{ github.event.pull_request.number }}"
+        run: echo "Hello, World!"
