@@ -8,5 +8,3 @@ resources:
   - ./sample-http3/sample-http3.ks.yaml
   - ./webapp-django-vite/webapp-django-vite.namespace.yaml
   - ./webapp-django-vite/webapp-django-vite.ks.yaml
-  - ./mcp-servers/chat/mcp-chat.namespace.yaml
-  - ./mcp-servers/chat/mcp-chat.ks.yaml
