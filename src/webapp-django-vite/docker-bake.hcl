@@ -26,6 +26,16 @@ target "frontend" {
   ]
 }
 
+target "chat-mcp-server" {
+  context    = "../../apps/mcp-servers/chat"
+  dockerfile = "Dockerfile"
+  platforms  = ["linux/amd64", "linux/arm64"]
+  tags = [
+    for tag in split(",", TAGS) :
+    "${REGISTRY}/chat-mcp-server:${tag}"
+  ]
+}
+
 group "default" {
-  targets = ["backend", "frontend"]
+  targets = ["backend", "frontend", "chat-mcp-server"]
 }

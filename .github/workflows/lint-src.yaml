@@ -5,6 +5,7 @@ on:
     types: [opened, reopened, synchronize]
     paths:
       - src/**
+      - apps/mcp-servers/chat/**
       - .github/workflows/lint-src.yaml
 
 permissions:
@@ -50,3 +51,10 @@ jobs:
           npm ci
           npm run lint
           npm run build
+
+      - name: Lint and test MCP server
+        working-directory: apps/mcp-servers/chat
+        run: |
+          python -m pip install -r requirements-dev.txt
+          ruff check .
+          python -m unittest

@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-chat
+  template:
+    metadata:
+      labels:
+        app: mcp-chat
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mcp-chat
+          image: ghcr.io/andreibe24/homelab-infrastructure/chat-mcp-server:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: CHAT_API_URL
+              value: http://webapp-django-vite-backend.webapp-django-vite.svc.cluster.local:8000/api/mcp/holiday-experiences/
+            - name: PORT
+              value: "8000"
+          startupProbe:
+            tcpSocket:
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            tcpSocket:
+              port: http
+          livenessProbe:
+            tcpSocket:
+              port: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

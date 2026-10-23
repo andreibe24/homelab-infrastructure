@@ -43,6 +43,23 @@
             <button id="logout-button" type="button" class="button-secondary">Sign out</button>
           </div>
         </header>
+        <details class="mcp-settings">
+          <summary>Manage MCP access</summary>
+          <p class="muted">Create a token to connect an MCP client to Campfire tools.</p>
+          <div class="mcp-token-controls">
+            <button id="create-mcp-token" type="button" class="button-secondary">Generate token</button>
+            <input id="mcp-token" aria-label="MCP bearer token" readonly hidden />
+            <button id="copy-mcp-token" type="button" class="button-secondary" hidden>Copy</button>
+          </div>
+          <p id="mcp-token-status" class="muted" role="status"></p>
+        </details>
+        <div class="message-filters">
+          <label for="message-filter">Show</label>
+          <select id="message-filter">
+            <option value="">All messages</option>
+            <option value="holiday">Holiday experiences</option>
+          </select>
+        </div>
         <ol id="messages" class="messages" aria-live="polite" aria-label="Channel messages"></ol>
         <form id="message-form" class="message-form">
           <label class="visually-hidden" for="message-input">Write a message</label>
