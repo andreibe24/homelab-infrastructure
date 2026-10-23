@@ -4,3 +4,5 @@ kind: Kustomization
 resources:
   - ./whoami/whoami.namespace.yaml
   - ./whoami/whoami.ks.yaml
+  - ./sample-http3/sample-http3.namespace.yaml
+  - ./sample-http3/sample-http3.ks.yaml

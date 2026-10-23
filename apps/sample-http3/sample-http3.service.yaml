@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-http3
+spec:
+  selector:
+    app: sample-http3
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+    - name: quic
+      port: 443
+      targetPort: quic
+      protocol: UDP

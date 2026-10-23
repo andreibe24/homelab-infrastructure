@@ -1,0 +1,17 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: sample-http3
+  namespace: sample-http3
+spec:
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  path: ./apps/sample-http3
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: homelab-infrastructure
+    namespace: flux-system

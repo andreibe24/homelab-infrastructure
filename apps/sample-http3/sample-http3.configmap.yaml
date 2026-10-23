@@ -1,0 +1,152 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sample-http3
+data:
+  Caddyfile: |
+    http://sample-http3.localhost:8080 {
+      root * /srv
+      header Alt-Svc "h3=\":8443\"; ma=86400"
+      header Access-Control-Allow-Origin "*"
+      header Access-Control-Expose-Headers "Content-Length"
+      header Timing-Allow-Origin "*"
+      file_server
+    }
+
+    http://sample-http3-h2.localhost:8080 {
+      root * /srv
+      header Access-Control-Allow-Origin "*"
+      header Access-Control-Expose-Headers "Content-Length"
+      header Timing-Allow-Origin "*"
+      file_server
+    }
+
+    https://sample-http3.localhost {
+      tls /etc/caddy/tls/tls.crt /etc/caddy/tls/tls.key
+      root * /srv
+      file_server
+    }
+  index.html: |
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>HTTP/2 vs HTTP/3 benchmark</title>
+      <style>
+        :root { color-scheme: light dark; font: 16px system-ui, sans-serif; }
+        body { max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
+        h1 { margin-bottom: .4rem; }
+        p { line-height: 1.5; }
+        button { padding: .65rem 1rem; font: inherit; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+        th, td { padding: .7rem; border-bottom: 1px solid #8886; text-align: left; }
+        #status { min-height: 1.5em; margin-top: 1rem; }
+        .note { opacity: .75; font-size: .9rem; }
+      </style>
+    </head>
+    <body>
+      <h1>HTTP/2 vs HTTP/3</h1>
+      <p>Download the same 8 MiB file several times from two endpoints and compare browser network timings. HTTP/3 uses QUIC over UDP; the control endpoint does not advertise HTTP/3.</p>
+      <button id="run">Run benchmark</button>
+      <p id="status" role="status">Ready. The first run warms both endpoints before measuring.</p>
+      <table>
+        <thead>
+          <tr><th>Endpoint</th><th>Protocol</th><th>Average</th><th>Fastest</th><th>DNS</th><th>Connect</th><th>TLS</th><th>Bytes</th></tr>
+        </thead>
+        <tbody id="results">
+          <tr><td colspan="8">Run the benchmark to see results.</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Timings come from the browser Resource Timing API. Results vary with browser support, network conditions, and whether a connection is reused. Confirm the reported protocol is h3 to verify HTTP/3 was used.</p>
+      <script>
+        const runButton = document.querySelector("#run");
+        const status = document.querySelector("#status");
+        const results = document.querySelector("#results");
+        const rounds = 3;
+        const fileSize = 8 * 1024 * 1024;
+        const endpoints = [
+          { name: "HTTP/2 control", host: "sample-http3-h2.localhost" },
+          { name: "HTTP/3 (QUIC)", host: "sample-http3.localhost" }
+        ];
+
+        async function download(host, label) {
+          const url = `https://${host}:8443/large.bin?run=${encodeURIComponent(label)}-${crypto.randomUUID()}`;
+          const start = performance.now();
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) throw new Error(`${host}: HTTP ${response.status}`);
+          await response.arrayBuffer();
+          const duration = performance.now() - start;
+          const entry = performance.getEntriesByName(url).at(-1);
+          return {
+            protocol: entry?.nextHopProtocol || "unavailable",
+            duration,
+            dns: entry ? entry.domainLookupEnd - entry.domainLookupStart : 0,
+            connect: entry ? entry.connectEnd - entry.connectStart : 0,
+            tls: entry && entry.secureConnectionStart > 0
+              ? entry.connectEnd - entry.secureConnectionStart
+              : 0,
+            bytes: entry?.encodedBodySize || fileSize
+          };
+        }
+
+        function average(samples, field) {
+          return samples.reduce((sum, sample) => sum + sample[field], 0) / samples.length;
+        }
+
+        function formatTime(milliseconds) {
+          return `${milliseconds.toFixed(1)} ms`;
+        }
+
+        runButton.addEventListener("click", async () => {
+          runButton.disabled = true;
+          results.replaceChildren();
+          status.textContent = "Warming up both endpoints…";
+          try {
+            await download("sample-http3-h2.localhost", "warmup");
+            await download("sample-http3.localhost", "warmup");
+            await download("sample-http3.localhost", "warmup");
+            const measured = endpoints.map(endpoint => ({ ...endpoint, samples: [] }));
+            for (let i = 0; i < rounds; i++) {
+              const order = i % 2 === 0 ? endpoints : [...endpoints].reverse();
+              for (const endpoint of order) {
+                status.textContent = `Measuring ${endpoint.name} (${i + 1}/${rounds})…`;
+                const result = await download(endpoint.host, `${endpoint.name}-${i}`);
+                measured.find(item => item.name === endpoint.name).samples.push(result);
+              }
+            }
+            for (const endpoint of measured) {
+              const samples = endpoint.samples;
+              const row = document.createElement("tr");
+              const values = [
+                endpoint.name,
+                [...new Set(samples.map(sample => sample.protocol))].join(", "),
+                formatTime(average(samples, "duration")),
+                formatTime(Math.min(...samples.map(sample => sample.duration))),
+                formatTime(average(samples, "dns")),
+                formatTime(average(samples, "connect")),
+                formatTime(average(samples, "tls")),
+                `${(average(samples, "bytes") / 1024 / 1024).toFixed(1)} MiB`
+              ];
+              for (const value of values) {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.append(cell);
+              }
+              results.append(row);
+            }
+            const h3 = measured.find(endpoint => endpoint.name === "HTTP/3 (QUIC)");
+            const protocol = [...new Set(h3.samples.map(sample => sample.protocol))].join(", ");
+            status.textContent = protocol.includes("h3")
+              ? "Complete. The HTTP/3 endpoint negotiated h3."
+              : `Complete, but the browser reported "${protocol}" for the HTTP/3 endpoint. Check browser HTTP/3 support and UDP reachability.`;
+          } catch (error) {
+            status.textContent = `Benchmark failed: ${error.message}`;
+          } finally {
+            runButton.disabled = false;
+          }
+        });
+      </script>
+    </body>
+    </html>
