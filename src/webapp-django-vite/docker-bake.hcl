@@ -2,28 +2,26 @@ variable "REGISTRY" {
   default = "ghcr.io/andreibe24/homelab-infrastructure"
 }
 
-variable "TAG" {
+variable "TAGS" {
   default = "dev"
-}
-
-function "tags" {
-  params = [image]
-  result = [
-    for tag in (TAG == "dev" ? [TAG] : [TAG, "dev"]) :
-    "${REGISTRY}/${image}:${tag}"
-  ]
 }
 
 target "backend" {
   context    = "."
   dockerfile = "Dockerfile.backend"
-  tags       = tags("webapp-django-vite-backend")
+  tags = [
+    for tag in split(",", TAGS) :
+    "${REGISTRY}/webapp-django-vite-backend:${tag}"
+  ]
 }
 
 target "frontend" {
   context    = "."
   dockerfile = "Dockerfile.frontend"
-  tags       = tags("webapp-django-vite-frontend")
+  tags = [
+    for tag in split(",", TAGS) :
+    "${REGISTRY}/webapp-django-vite-frontend:${tag}"
+  ]
 }
 
 group "default" {

@@ -54,7 +54,7 @@ jobs:
               core.setFailed("Merged PR title must begin with vMAJOR.MINOR.PATCH.");
               return;
             }
-            core.setOutput("value", `v${version[1]}`);
+            core.setOutput("value", `v${version[1]},dev`);
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -69,6 +69,6 @@ jobs:
       - name: Build and push images
         working-directory: src/webapp-django-vite
         env:
-          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+          IMAGE_TAGS: ${{ steps.tag.outputs.value }}
           REGISTRY: ghcr.io/${{ github.repository }}
-        run: TAG="$IMAGE_TAG" docker buildx bake --push
+        run: TAGS="$IMAGE_TAGS" docker buildx bake --push
