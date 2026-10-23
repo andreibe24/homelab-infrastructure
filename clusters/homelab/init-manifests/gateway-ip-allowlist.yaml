@@ -1,0 +1,12 @@
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: gateway-ip-allowlist
+spec:
+  description: Only the laptop can reach Gateway API listeners
+  endpointSelector:
+    matchLabels:
+      reserved:ingress: ""
+  ingress:
+    - fromCIDR:
+        - 192.168.1.50/32
