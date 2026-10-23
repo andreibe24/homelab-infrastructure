@@ -4,3 +4,5 @@ kind: Kustomization
 resources:
   - ./whoami/whoami.namespace.yaml
   - ./whoami/whoami.ks.yaml
+  - ./webapp-django-vite/webapp-django-vite.namespace.yaml
+  - ./webapp-django-vite/webapp-django-vite.ks.yaml

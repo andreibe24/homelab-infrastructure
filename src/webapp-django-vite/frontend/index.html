@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <title>Campfire — the shared channel</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="brand">
+        <span class="brand-mark" aria-hidden="true">✳</span>
+        <div>
+          <p class="eyebrow">One room. Everyone welcome.</p>
+          <h1>Campfire</h1>
+        </div>
+      </header>
+
+      <section id="auth-panel" class="panel auth-panel" aria-labelledby="welcome-title">
+        <p class="eyebrow">The community channel</p>
+        <h2 id="welcome-title">Pull up a chair.</h2>
+        <p class="muted">Sign in or create an account to join the conversation.</p>
+        <form id="auth-form">
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" maxlength="150" required />
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+          <div class="button-row">
+            <button type="submit" name="mode" value="login">Sign in</button>
+            <button type="submit" name="mode" value="register" class="button-secondary">Create account</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="chat-panel" class="panel chat-panel" aria-labelledby="channel-title" hidden>
+        <header class="channel-header">
+          <div>
+            <p class="eyebrow">Public channel</p>
+            <h2 id="channel-title"># the-lounge</h2>
+          </div>
+          <div class="user-controls">
+            <span id="current-user"></span>
+            <button id="logout-button" type="button" class="button-secondary">Sign out</button>
+          </div>
+        </header>
+        <ol id="messages" class="messages" aria-live="polite" aria-label="Channel messages"></ol>
+        <form id="message-form" class="message-form">
+          <label class="visually-hidden" for="message-input">Write a message</label>
+          <input id="message-input" name="content" maxlength="2000" placeholder="Say something kind…" required />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
