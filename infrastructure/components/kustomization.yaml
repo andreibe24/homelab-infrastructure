@@ -13,4 +13,6 @@ resources:
   - ./cloudnative-pg/cloudnative-pg.ks.yaml
   - ./agentgateway-crds/agentgateway-crds.namespace.yaml
   - ./agentgateway-crds/agentgateway-crds.ks.yaml
+  - ./agentgateway-crds/agentgateway-controller.ks.yaml
+  - ./agentgateway-crds/copilot.ks.yaml
   - ./dragonfly-operator/dragonfly-operator.ks.yaml
