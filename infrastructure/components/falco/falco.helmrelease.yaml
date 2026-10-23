@@ -17,6 +17,12 @@ spec:
     remediation:
       retries: 3
   values:
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
+    controller:
+      annotations:
+        reloader.stakater.com/auto: "true"
+
     # Use modern eBPF driver with CO-RE / BTF for modern Linux kernels without compiling modules
     driver:
       kind: modern_ebpf

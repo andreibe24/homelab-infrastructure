@@ -18,6 +18,8 @@ spec:
       retries: 3
   values:
     fullnameOverride: falcosidekick-critical
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
     webui:
       enabled: false
     config:
