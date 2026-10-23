@@ -1,0 +1,16 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: rag-postgres
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17-standard-trixie
+  storage:
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: openwebui
+      owner: openwebui
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS vector;
