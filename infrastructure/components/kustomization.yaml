@@ -9,5 +9,7 @@ resources:
   - ./gateway/gateway.ks.yaml
   - ./falco/falco.namespace.yaml
   - ./falco/falco.ks.yaml
+  - ./reflector/reflector.namespace.yaml
+  - ./reflector/reflector.ks.yaml
   - ./reloader/reloader.namespace.yaml
   - ./reloader/reloader.ks.yaml
