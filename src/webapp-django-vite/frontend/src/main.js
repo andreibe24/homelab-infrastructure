@@ -7,6 +7,10 @@ const messageForm = document.querySelector("#message-form");
 const messagesList = document.querySelector("#messages");
 const status = document.querySelector("#status");
 const usernameLabel = document.querySelector("#current-user");
+const messageFilter = document.querySelector("#message-filter");
+const mcpTokenInput = document.querySelector("#mcp-token");
+const mcpTokenStatus = document.querySelector("#mcp-token-status");
+const copyMcpTokenButton = document.querySelector("#copy-mcp-token");
 let csrfToken = "";
 
 function showStatus(message) {
@@ -74,14 +78,34 @@ function renderMessages(messages) {
     const content = document.createElement("p");
     content.textContent = message.content;
     item.append(heading, content);
+    if (message.labels?.length) {
+      const labels = document.createElement("div");
+      labels.className = "message-labels";
+      for (const label of message.labels) {
+        const badge = document.createElement("span");
+        badge.className = "message-label";
+        badge.textContent = label;
+        labels.append(badge);
+      }
+      item.append(labels);
+    }
     messagesList.append(item);
   }
   messagesList.scrollTop = messagesList.scrollHeight;
 }
 
 async function loadMessages() {
-  const data = await request("/api/messages/");
+  const label = messageFilter.value;
+  const query = label ? `?${new URLSearchParams({ label })}` : "";
+  const data = await request(`/api/messages/${query}`);
   renderMessages(data.messages);
+}
+
+async function loadMcpTokenStatus() {
+  const data = await request("/api/mcp-token/");
+  mcpTokenStatus.textContent = data.configured
+    ? "A token is configured. Generate a new one to rotate it."
+    : "No token is configured.";
 }
 
 function setAuthenticated(username) {
@@ -90,11 +114,16 @@ function setAuthenticated(username) {
   chatPanel.hidden = false;
   showStatus("");
   loadMessages().catch((error) => showStatus(error.message));
+  loadMcpTokenStatus().catch((error) => showStatus(error.message));
 }
 
 function setAnonymous() {
   chatPanel.hidden = true;
   authPanel.hidden = false;
+  mcpTokenInput.value = "";
+  mcpTokenInput.hidden = true;
+  copyMcpTokenButton.hidden = true;
+  mcpTokenStatus.textContent = "";
 }
 
 authForm.addEventListener("submit", async (event) => {
@@ -134,6 +163,32 @@ messageForm.addEventListener("submit", async (event) => {
     showStatus("");
   } catch (error) {
     showStatus(error.message);
+  }
+});
+
+messageFilter.addEventListener("change", () => {
+  loadMessages().catch((error) => showStatus(error.message));
+});
+
+document.querySelector("#create-mcp-token").addEventListener("click", async () => {
+  try {
+    const data = await request("/api/mcp-token/create/", { method: "POST" });
+    mcpTokenInput.value = data.token;
+    mcpTokenInput.hidden = false;
+    copyMcpTokenButton.hidden = false;
+    mcpTokenStatus.textContent =
+      "Copy this token now. It cannot be viewed again, and the previous token is revoked.";
+  } catch (error) {
+    showStatus(error.message);
+  }
+});
+
+copyMcpTokenButton.addEventListener("click", async () => {
+  try {
+    await window.navigator.clipboard.writeText(mcpTokenInput.value);
+    mcpTokenStatus.textContent = "Token copied to clipboard.";
+  } catch {
+    mcpTokenStatus.textContent = "Clipboard unavailable. Copy the token from the field.";
   }
 });
 

@@ -1,4 +1,6 @@
+import hashlib
 import json
+import secrets
 
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.password_validation import validate_password
@@ -6,10 +8,12 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
-from .models import ChatMessage
+from .models import ChatMessage, MCPAccessToken
 
 
 def _json_body(request):
@@ -24,6 +28,35 @@ def _authenticated(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required."}, status=401)
     return None
+
+
+def _mcp_user(request):
+    authorization = request.headers.get("Authorization", "")
+    scheme, separator, token = authorization.partition(" ")
+    if not separator or scheme.lower() != "bearer" or not token:
+        return None
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    access_token = (
+        MCPAccessToken.objects.select_related("user")
+        .filter(token_hash=token_hash)
+        .first()
+    )
+    if access_token is None or not access_token.user.is_active:
+        return None
+    MCPAccessToken.objects.filter(pk=access_token.pk).update(
+        last_used_at=timezone.now()
+    )
+    return access_token.user
+
+
+def _message_data(message):
+    return {
+        "id": message.id,
+        "username": message.author.get_username(),
+        "content": message.content,
+        "labels": message.labels,
+        "createdAt": message.created_at.isoformat(),
+    }
 
 
 @require_GET
@@ -42,6 +75,29 @@ def current_user(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required."}, status=401)
     return JsonResponse({"username": request.user.get_username()})
+
+
+@require_GET
+def mcp_token_status(request):
+    error = _authenticated(request)
+    if error:
+        return error
+    return JsonResponse(
+        {"configured": MCPAccessToken.objects.filter(user=request.user).exists()}
+    )
+
+
+@require_POST
+def create_mcp_token(request):
+    error = _authenticated(request)
+    if error:
+        return error
+    token = secrets.token_urlsafe(32)
+    MCPAccessToken.objects.update_or_create(
+        user=request.user,
+        defaults={"token_hash": hashlib.sha256(token.encode()).hexdigest()},
+    )
+    return JsonResponse({"token": token})
 
 
 @require_POST
@@ -110,24 +166,13 @@ def messages(request):
     error = _authenticated(request)
     if error:
         return error
-    rows = list(
-        ChatMessage.objects.select_related("author")
-        .order_by("-created_at", "-id")[:100]
-    )
+    queryset = ChatMessage.objects.select_related("author")
+    label = request.GET.get("label", "").strip()
+    if label:
+        queryset = queryset.filter(labels__icontains=json.dumps(label))
+    rows = list(queryset.order_by("-created_at", "-id")[:100])
     rows.reverse()
-    return JsonResponse(
-        {
-            "messages": [
-                {
-                    "id": row.id,
-                    "username": row.author.get_username(),
-                    "content": row.content,
-                    "createdAt": row.created_at.isoformat(),
-                }
-                for row in rows
-            ]
-        }
-    )
+    return JsonResponse({"messages": [_message_data(row) for row in rows]})
 
 
 @require_POST
@@ -146,12 +191,80 @@ def post_message(request):
             {"error": "Messages must contain 1 to 2000 characters."}, status=400
         )
     row = ChatMessage.objects.create(author=request.user, content=content)
-    return JsonResponse(
-        {
-            "id": row.id,
-            "username": row.author.get_username(),
-            "content": row.content,
-            "createdAt": row.created_at.isoformat(),
-        },
-        status=201,
+    return JsonResponse(_message_data(row), status=201)
+
+
+@csrf_exempt
+@require_POST
+def mcp_send_holiday_experience(request):
+    user = _mcp_user(request)
+    if user is None:
+        return JsonResponse(
+            {"error": "A valid MCP bearer token is required."}, status=401
+        )
+
+    data = _json_body(request)
+    field_limits = {
+        "title": 120,
+        "destination": 200,
+        "dates": 100,
+        "highlights": 600,
+        "tips": 600,
+    }
+    if data is None or any(
+        not isinstance(data.get(field), str)
+        or not data[field].strip()
+        or len(data[field].strip()) > limit
+        for field, limit in field_limits.items()
+    ):
+        return JsonResponse(
+            {
+                "error": (
+                    "Provide title, destination, dates, highlights, and tips "
+                    "as non-empty strings within their field limits."
+                )
+            },
+            status=400,
+        )
+
+    content = "\n".join(
+        (
+            f"Holiday experience: {data['title'].strip()}",
+            f"Destination: {data['destination'].strip()}",
+            f"When: {data['dates'].strip()}",
+            f"Highlights: {data['highlights'].strip()}",
+            f"Tips: {data['tips'].strip()}",
+        )
     )
+    if len(content) > 2000:
+        return JsonResponse(
+            {"error": "The formatted holiday message exceeds 2000 characters."},
+            status=400,
+        )
+    message = ChatMessage.objects.create(
+        author=user,
+        content=content,
+        labels=["holiday"],
+    )
+    return JsonResponse(_message_data(message), status=201)
+
+
+@csrf_exempt
+@require_GET
+def mcp_view_holiday_experiences(request):
+    if _mcp_user(request) is None:
+        return JsonResponse(
+            {"error": "A valid MCP bearer token is required."}, status=401
+        )
+    try:
+        limit = int(request.GET.get("limit", "20"))
+    except ValueError:
+        return JsonResponse({"error": "Limit must be an integer."}, status=400)
+    if not 1 <= limit <= 100:
+        return JsonResponse({"error": "Limit must be between 1 and 100."}, status=400)
+    rows = (
+        ChatMessage.objects.select_related("author")
+        .filter(labels__icontains=json.dumps("holiday"))
+        .order_by("-created_at", "-id")[:limit]
+    )
+    return JsonResponse({"messages": [_message_data(row) for row in rows]})
