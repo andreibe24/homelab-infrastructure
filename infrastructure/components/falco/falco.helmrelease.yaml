@@ -134,6 +134,8 @@ spec:
     # Falcosidekick alert routing and Web UI
     falcosidekick:
       enabled: true
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
       webui:
         enabled: true
       config:
