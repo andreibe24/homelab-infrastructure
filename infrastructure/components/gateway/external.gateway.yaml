@@ -39,15 +39,3 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-    - name: sample-http3-quic
-      protocol: UDP
-      port: 8443
-      allowedRoutes:
-        kinds:
-          - group: gateway.networking.k8s.io
-            kind: UDPRoute
-        namespaces:
-          from: Selector
-          selector:
-            matchLabels:
-              kubernetes.io/metadata.name: sample-http3

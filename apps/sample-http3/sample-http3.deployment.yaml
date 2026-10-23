@@ -37,6 +37,7 @@ spec:
               protocol: TCP
             - name: quic
               containerPort: 443
+              hostPort: 8443
               protocol: UDP
           readinessProbe:
             tcpSocket:

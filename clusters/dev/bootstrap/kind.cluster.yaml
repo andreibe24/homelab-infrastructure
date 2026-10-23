@@ -17,3 +17,7 @@ nodes:
         hostPort: 8443
         listenAddress: "127.0.0.1"
         protocol: TCP
+      - containerPort: 8443
+        hostPort: 8443
+        listenAddress: "127.0.0.1"
+        protocol: UDP
