@@ -9,3 +9,7 @@ resources:
   - ./gateway/gateway.ks.yaml
   - ./falco/falco.namespace.yaml
   - ./falco/falco.ks.yaml
+  - ./cloudnative-pg/cloudnative-pg.namespace.yaml
+  - ./cloudnative-pg/cloudnative-pg.ks.yaml
+  - ./dragonfly-operator/dragonfly-operator.namespace.yaml
+  - ./dragonfly-operator/dragonfly-operator.ks.yaml
