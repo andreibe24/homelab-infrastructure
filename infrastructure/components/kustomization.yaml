@@ -11,4 +11,6 @@ resources:
   - ./falco/falco.ks.yaml
   - ./cloudnative-pg/cloudnative-pg.namespace.yaml
   - ./cloudnative-pg/cloudnative-pg.ks.yaml
+  - ./agentgateway-crds/agentgateway-crds.namespace.yaml
+  - ./agentgateway-crds/agentgateway-crds.ks.yaml
   - ./dragonfly-operator/dragonfly-operator.ks.yaml
