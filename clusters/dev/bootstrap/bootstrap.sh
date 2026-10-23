@@ -11,6 +11,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 CLUSTER_NAME="dev"
 KIND_CONFIG="kind.cluster.yaml"
 KUBECONFIG_PATH="$HOME/.kube/configs/dev-cluster.yaml"
+SOPS_AGE_KEY="$HOME/.config/sops/age/keys.txt"
 
 # renovate: datasource=github-releases depName=kubernetes-sigs/gateway-api
 GATEWAY_API_VERSION="v1.6.3"
@@ -53,6 +54,7 @@ fi
 for f in "$KIND_CONFIG" "$CILIUM_VALUES" "$OPERATOR_VALUES" "$FLUX_INSTANCE"; do
   [[ -f "$f" ]] || fail "required file not found: $f"
 done
+[[ -f "$SOPS_AGE_KEY" ]] || fail "SOPS age key file not found: $SOPS_AGE_KEY"
 
 # 3. The cluster must not exist yet
 if kind get clusters 2>/dev/null | grep -qx "$CLUSTER_NAME"; then
@@ -116,7 +118,13 @@ printf '%s' "$GIT_TOKEN" | kubectl create secret generic git-creds \
   --from-file=password=/dev/stdin
 unset GIT_TOKEN
 
-# 5. Flux Operator via Helm, with the web UI settings
+# 5. SOPS decryption key
+log "Creating SOPS decryption key secret"
+kubectl create secret generic sops-age \
+  --namespace=flux-system \
+  --from-file=age.agekey=/dev/stdin < "$SOPS_AGE_KEY"
+
+# 6. Flux Operator via Helm, with the web UI settings
 log "Installing the Flux Operator $FLUX_OPERATOR_VERSION"
 helm install flux-operator \
   oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
@@ -125,7 +133,7 @@ helm install flux-operator \
   -f "$OPERATOR_VALUES" \
   --wait
 
-# 6. Flux instance; it syncs the repo and adopts the rest
+# 7. Flux instance; it syncs the repo and adopts the rest
 log "Applying the FluxInstance"
 kubectl apply -f "$FLUX_INSTANCE"
 kubectl -n flux-system wait fluxinstance/flux --for=condition=Ready --timeout=10m

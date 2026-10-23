@@ -10,10 +10,6 @@ spec:
       namespace: gateway
     - name: reflector
       namespace: reflector
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
   interval: 1h
   retryInterval: 1m
   timeout: 10m
