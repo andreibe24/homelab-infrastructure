@@ -67,12 +67,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push images
-        working-directory: src/webapp-django-vite
         uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
         with:
+          source: ./src/webapp-django-vite
           push: true
           set: |
-            *.platform=linux/amd64,linux/arm64
             backend.cache-from=type=gha,scope=chat-backend
             backend.cache-to=type=gha,mode=max,scope=chat-backend
             frontend.cache-from=type=gha,scope=chat-frontend
