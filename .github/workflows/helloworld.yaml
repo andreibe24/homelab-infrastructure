@@ -1,0 +1,12 @@
+name: Hello World
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say hello
+        run: echo "Hello, World! Triggered by PR #${{ github.event.pull_request.number }}"
