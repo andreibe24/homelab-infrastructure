@@ -31,8 +31,8 @@ Open `http://localhost:5173`. Vite proxies `/api/` requests to Django.
 
 ## Container images
 
-From this directory, `docker buildx bake` builds the backend and frontend.
-The default tag is `dev`; set `TAG` to a semantic version such as `v1.2.3` to
-publish both that version and `dev`. Set `REGISTRY` to override the image
-namespace. The GitHub workflow uses `dev` for pull-request dry runs and derives
-the release tag from the merged PR title, which must start with `vMAJOR.MINOR.PATCH`.
+From this directory, `docker buildx bake` builds the backend and frontend with
+the `dev` tag by default. Set `TAGS=v1.2.3,dev` for a versioned release and
+`REGISTRY` to override the image namespace. The GitHub workflow uses `dev` for
+pull-request dry runs and derives the release tag from the merged PR title,
+which must start with `vMAJOR.MINOR.PATCH`.
