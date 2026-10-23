@@ -23,3 +23,7 @@ resources:
   - ./agentgateway/agentgateway.ks.yaml
   - ./agentgateway-ratelimit/agentgateway-ratelimit.ks.yaml
   - ./agentgateway-config/agentgateway-config.ks.yaml
+  - ./cloudnative-pg/cloudnative-pg.namespace.yaml
+  - ./cloudnative-pg/cloudnative-pg.ks.yaml
+  - ./dragonfly-operator/dragonfly-operator.namespace.yaml
+  - ./dragonfly-operator/dragonfly-operator.ks.yaml
