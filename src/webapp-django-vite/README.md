@@ -32,10 +32,12 @@ Open `http://localhost:5173`. Vite proxies `/api/` requests to Django.
 ## Container images
 
 From this directory, `docker buildx bake` builds the backend and frontend with
-the `dev` tag by default. Set `TAGS=v1.2.3,dev` for a versioned release and
-`REGISTRY` to override the image namespace. The GitHub workflow uses `dev` for
-pull-request dry runs and derives the release tag from the merged PR title,
-which must start with `vMAJOR.MINOR.PATCH`.
+the `dev` tag by default. Set `TAGS=1.2.3,dev-1.2.3` for a versioned release and
+`REGISTRY` to override the image namespace. Pull requests push a `dev` preview;
+PR titles must follow Conventional Commits. Merging one calculates a semver
+release, creates the GitHub release first, then publishes `X.Y.Z` and
+`dev-X.Y.Z` image tags. For example, `feat!: init source code` is a breaking
+change and advances the major version.
 
 After the first push, make both GHCR packages public for the cluster to pull
 them without credentials, or configure an `imagePullSecret` in the app

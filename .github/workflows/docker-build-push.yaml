@@ -1,19 +1,22 @@
 name: Build and push chat images
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - src/webapp-django-vite/**
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
       - src/webapp-django-vite/**
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release tag, for example v1.2.3
+        required: true
+        type: string
 
 permissions:
   contents: read
   packages: write
-  pull-requests: read
 
 jobs:
   build:
@@ -27,9 +30,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Select image tag
-        id: tag
+      - name: Select image tags
+        id: tags
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
         with:
           script: |
             if (context.eventName === "pull_request") {
@@ -37,24 +42,16 @@ jobs:
               return;
             }
 
-            const { data: pullRequests } =
-              await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.sha,
-              });
-            const mergedPullRequest = pullRequests.find((pullRequest) => pullRequest.merged_at);
-            if (!mergedPullRequest) {
-              core.setOutput("value", "dev");
+            const tag = context.eventName === "release"
+              ? context.payload.release.tag_name
+              : process.env.DISPATCH_TAG;
+            const match = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(tag ?? "");
+            if (!match) {
+              core.setFailed(`Release tag must be semantic version X.Y.Z or vX.Y.Z; received "${tag}".`);
               return;
             }
-
-            const version = mergedPullRequest.title.match(/^v(\d+\.\d+\.\d+)(?:$|[ :—-])/);
-            if (!version) {
-              core.setFailed("Merged PR title must begin with vMAJOR.MINOR.PATCH.");
-              return;
-            }
-            core.setOutput("value", `v${version[1]},dev`);
+            const version = `${match[1]}.${match[2]}.${match[3]}`;
+            core.setOutput("value", `${version},dev-${version}`);
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -69,6 +66,6 @@ jobs:
       - name: Build and push images
         working-directory: src/webapp-django-vite
         env:
-          IMAGE_TAGS: ${{ steps.tag.outputs.value }}
+          IMAGE_TAGS: ${{ steps.tags.outputs.value }}
           REGISTRY: ghcr.io/${{ github.repository }}
         run: TAGS="$IMAGE_TAGS" docker buildx bake --push
