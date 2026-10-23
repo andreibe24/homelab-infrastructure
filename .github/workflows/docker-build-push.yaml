@@ -1,0 +1,74 @@
+name: Build and push chat images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/webapp-django-vite/**
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - src/webapp-django-vite/**
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: read
+
+jobs:
+  build:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select image tag
+        id: tag
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            if (context.eventName === "pull_request") {
+              core.setOutput("value", "dev");
+              return;
+            }
+
+            const { data: pullRequests } =
+              await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+              });
+            const mergedPullRequest = pullRequests.find((pullRequest) => pullRequest.merged_at);
+            if (!mergedPullRequest) {
+              core.setOutput("value", "dev");
+              return;
+            }
+
+            const version = mergedPullRequest.title.match(/^v(\d+\.\d+\.\d+)(?:$|[ :—-])/);
+            if (!version) {
+              core.setFailed("Merged PR title must begin with vMAJOR.MINOR.PATCH.");
+              return;
+            }
+            core.setOutput("value", `v${version[1]}`);
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push images
+        working-directory: src/webapp-django-vite
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+          REGISTRY: ghcr.io/${{ github.repository }}
+        run: TAG="$IMAGE_TAG" docker buildx bake --push
