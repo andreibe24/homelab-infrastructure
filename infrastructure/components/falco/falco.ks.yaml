@@ -8,6 +8,8 @@ spec:
   dependsOn:
     - name: gateway
       namespace: gateway
+    - name: reflector
+      namespace: reflector
   decryption:
     provider: sops
     secretRef:
