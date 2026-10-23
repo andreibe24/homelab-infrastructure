@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      containers:
+        - name: open-webui
+          image: ghcr.io/open-webui/open-webui:v0.12.3
+          ports:
+            - containerPort: 8080
+          env:
+            - name: VECTOR_DB
+              value: pgvector
+            - name: PGVECTOR_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rag-postgres-app
+                  key: uri
+          volumeMounts:
+            - name: data
+              mountPath: /app/backend/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: open-webui
