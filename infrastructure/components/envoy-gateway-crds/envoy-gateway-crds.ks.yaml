@@ -1,0 +1,19 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: envoy-gateway-crds
+  namespace: envoy-gateway
+spec:
+  dependsOn:
+    - name: envoy-gateway-source
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  path: ./charts/gateway-helm/charts/crds/crds/generated
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: envoy-gateway-upstream
+    namespace: envoy-gateway

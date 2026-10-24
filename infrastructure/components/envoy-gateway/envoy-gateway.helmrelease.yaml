@@ -5,17 +5,13 @@ metadata:
   name: envoy-gateway
 spec:
   interval: 30m
-  dependsOn:
-    - name: envoy-gateway-crds
   chartRef:
     kind: OCIRepository
     name: envoy-gateway
   install:
-    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
-    crds: CreateReplace
     remediation:
       retries: 3
   values:

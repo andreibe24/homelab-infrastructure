@@ -1,0 +1,11 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: envoy-gateway-upstream
+  namespace: envoy-gateway
+spec:
+  interval: 1h
+  url: https://github.com/envoyproxy/gateway
+  ref:
+    tag: v1.9.2
