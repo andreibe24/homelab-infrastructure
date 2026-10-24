@@ -2,7 +2,8 @@ name: Renovate
 
 on:
   schedule:
-    - cron: "0 21 * * *"
+    - cron: "20 */4 * * *"           # 00:20, 04:20, 08:20, 12:20, 16:20, 20:20
+      timezone: "Europe/Bucharest"  # IANA zone, DST handled by GitHub
   workflow_dispatch:
 
 permissions:
