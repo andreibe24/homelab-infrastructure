@@ -6,6 +6,4 @@ ipam:
 operator:
   replicas: 1
 gatewayAPI:
-  enabled: true
-  hostNetwork:
-    enabled: true
+  enabled: false

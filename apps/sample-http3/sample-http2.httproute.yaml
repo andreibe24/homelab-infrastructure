@@ -1,0 +1,16 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: sample-http2
+spec:
+  parentRefs:
+    - name: external
+      namespace: gateway
+      sectionName: https-wildcard
+  hostnames:
+    - sample-http2.localhost
+  rules:
+    - backendRefs:
+        - name: sample-http3
+          port: 8080

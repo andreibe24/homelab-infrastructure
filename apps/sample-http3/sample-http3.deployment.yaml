@@ -35,10 +35,6 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-            - name: quic
-              containerPort: 443
-              hostPort: 8443
-              protocol: UDP
           readinessProbe:
             tcpSocket:
               port: http
@@ -46,9 +42,6 @@ spec:
             - name: config
               mountPath: /etc/caddy/Caddyfile
               subPath: Caddyfile
-              readOnly: true
-            - name: tls
-              mountPath: /etc/caddy/tls
               readOnly: true
             - name: data
               mountPath: /srv
@@ -62,6 +55,3 @@ spec:
         - name: index
           configMap:
             name: sample-http3
-        - name: tls
-          secret:
-            secretName: sample-http3-tls

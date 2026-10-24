@@ -4,7 +4,12 @@ kind: Gateway
 metadata:
   name: external
 spec:
-  gatewayClassName: cilium
+  gatewayClassName: envoy-gateway
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: external
   listeners:
     # Omitting 'hostname' on the HTTP listener creates a wildcard domain match ("*") in Envoy.
     # This ensures any HTTP request on port 8080 (including non-standard host headers with port suffixes
@@ -12,6 +17,18 @@ spec:
     - name: http
       protocol: HTTP
       port: 8080
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-http3
+      protocol: HTTPS
+      port: 8443
+      hostname: "sample-http3.localhost"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: localhost-tls
       allowedRoutes:
         namespaces:
           from: All

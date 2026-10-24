@@ -1,0 +1,21 @@
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: external
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  # kind port mappings reach the node network namespace directly.
+                  hostNetwork: true
+                  dnsPolicy: ClusterFirstWithHostNet
+      envoyService:
+        type: ClusterIP

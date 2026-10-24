@@ -5,31 +5,15 @@ metadata:
   name: sample-http3
 data:
   Caddyfile: |
-    {
-      servers {
-        strict_sni_host on
-      }
-    }
-
     http://sample-http3.localhost:8080 {
       root * /srv
-      header Alt-Svc "h3=\":8443\"; ma=86400"
       header Access-Control-Allow-Origin "*"
       header Access-Control-Expose-Headers "Content-Length"
       header Timing-Allow-Origin "*"
       file_server
     }
 
-    http://sample-http3-h2.localhost:8080 {
-      root * /srv
-      header Access-Control-Allow-Origin "*"
-      header Access-Control-Expose-Headers "Content-Length"
-      header Timing-Allow-Origin "*"
-      file_server
-    }
-
-    https://sample-http3.localhost {
-      tls /etc/caddy/tls/tls.crt /etc/caddy/tls/tls.key
+    http://sample-http2.localhost:8080 {
       root * /srv
       header Access-Control-Allow-Origin "*"
       header Access-Control-Expose-Headers "Content-Length"
@@ -57,7 +41,7 @@ data:
     </head>
     <body>
       <h1>HTTP/2 vs HTTP/3</h1>
-      <p>Download the same 8 MiB file several times from two endpoints and compare browser network timings. HTTP/3 uses QUIC over UDP; the control endpoint does not advertise HTTP/3.</p>
+      <p>Download the same 8 MiB file from two endpoints and compare browser network timings. The HTTP/2 endpoint does not advertise HTTP/3; the HTTP/3 endpoint enables QUIC. Confirm the reported protocol to verify each connection.</p>
       <button id="run">Run benchmark</button>
       <p id="status" role="status">Ready. The first run warms both endpoints before measuring.</p>
       <table>
@@ -76,12 +60,12 @@ data:
         const rounds = 3;
         const fileSize = 8 * 1024 * 1024;
         const endpoints = [
-          { name: "HTTP/2 control", host: "sample-http3-h2.localhost" },
-          { name: "HTTP/3 (QUIC)", host: "sample-http3.localhost" }
+          { name: "HTTP/2", host: "sample-http2.localhost", port: 8443 },
+          { name: "HTTP/3 (QUIC)", host: "sample-http3.localhost", port: 8443 }
         ];
 
-        async function download(host, label) {
-          const url = `https://${host}:8443/large.bin?run=${encodeURIComponent(label)}-${crypto.randomUUID()}`;
+        async function download(host, port, label) {
+          const url = `https://${host}:${port}/large.bin?run=${encodeURIComponent(label)}-${crypto.randomUUID()}`;
           const start = performance.now();
           const response = await fetch(url, { cache: "no-store" });
           if (!response.ok) throw new Error(`${host}: HTTP ${response.status}`);
@@ -113,15 +97,15 @@ data:
           results.replaceChildren();
           status.textContent = "Warming up both endpoints…";
           try {
-            await download("sample-http3-h2.localhost", "warmup");
-            await download("sample-http3.localhost", "warmup");
-            await download("sample-http3.localhost", "warmup");
+            await download("sample-http2.localhost", 8443, "warmup");
+            await download("sample-http3.localhost", 8443, "warmup");
+            await download("sample-http3.localhost", 8443, "warmup");
             const measured = endpoints.map(endpoint => ({ ...endpoint, samples: [] }));
             for (let i = 0; i < rounds; i++) {
               const order = i % 2 === 0 ? endpoints : [...endpoints].reverse();
               for (const endpoint of order) {
                 status.textContent = `Measuring ${endpoint.name} (${i + 1}/${rounds})…`;
-                const result = await download(endpoint.host, `${endpoint.name}-${i}`);
+                const result = await download(endpoint.host, endpoint.port, `${endpoint.name}-${i}`);
                 measured.find(item => item.name === endpoint.name).samples.push(result);
               }
             }
@@ -145,11 +129,13 @@ data:
               }
               results.append(row);
             }
+            const h2 = measured.find(endpoint => endpoint.name === "HTTP/2");
             const h3 = measured.find(endpoint => endpoint.name === "HTTP/3 (QUIC)");
-            const protocol = [...new Set(h3.samples.map(sample => sample.protocol))].join(", ");
-            status.textContent = protocol.includes("h3")
-              ? "Complete. The HTTP/3 endpoint negotiated h3."
-              : `Complete, but the browser reported "${protocol}" for the HTTP/3 endpoint. Check browser HTTP/3 support and UDP reachability.`;
+            const h2Protocol = [...new Set(h2.samples.map(sample => sample.protocol))].join(", ");
+            const h3Protocol = [...new Set(h3.samples.map(sample => sample.protocol))].join(", ");
+            status.textContent = h2Protocol.includes("h2") && h3Protocol.includes("h3")
+              ? "Complete. The endpoints negotiated HTTP/2 and HTTP/3 as expected."
+              : `Check protocols: HTTP/2 endpoint reported "${h2Protocol}", HTTP/3 endpoint reported "${h3Protocol}".`;
           } catch (error) {
             status.textContent = `Benchmark failed: ${error.message}`;
           } finally {
