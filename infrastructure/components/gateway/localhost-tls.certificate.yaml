@@ -7,10 +7,14 @@ spec:
   secretName: localhost-tls
   duration: 2160h # 90 days
   renewBefore: 360h # 15 days
-  commonName: "*.localhost"
+  commonName: localhost
   dnsNames:
-    - "*.localhost"
     - "localhost"
+    - "sample-http2.localhost"
+    - "sample-http3.localhost"
+    - "flux.localhost"
+    - "falco.localhost"
+    - "whoami.localhost"
   issuerRef:
     name: root-ca-issuer
     kind: ClusterIssuer

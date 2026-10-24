@@ -9,4 +9,5 @@ spec:
       kind: Gateway
       name: external
       sectionName: https-http3
+  http2: {}
   http3: {}
