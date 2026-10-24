@@ -1,0 +1,107 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: monitoring
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: kube-prometheus-stack
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    alertmanager:
+      config:
+        global:
+          resolve_timeout: 5m
+        inhibit_rules:
+          - source_matchers:
+              - severity = critical
+            target_matchers:
+              - severity =~ warning|info
+            equal:
+              - namespace
+              - alertname
+          - source_matchers:
+              - severity = warning
+            target_matchers:
+              - severity = info
+            equal:
+              - namespace
+              - alertname
+          - source_matchers:
+              - alertname = InfoInhibitor
+            target_matchers:
+              - severity = info
+            equal:
+              - namespace
+          - target_matchers:
+              - alertname = InfoInhibitor
+        route:
+          group_by:
+            - alertname
+            - namespace
+            - cluster
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 12h
+          receiver: slack
+          routes:
+            - receiver: "null"
+              matchers:
+                - alertname = "Watchdog"
+        receivers:
+          - name: slack
+            slack_configs:
+              - api_url_file: /etc/alertmanager/secrets/alertmanager-slack/slack_api_url
+                title: '[Cluster: {{ .CommonLabels.cluster }}] {{ .CommonLabels.alertname }}'
+                send_resolved: true
+          - name: "null"
+      alertmanagerSpec:
+        secrets:
+          - alertmanager-slack
+    additionalPrometheusRulesMap:
+      cluster-health:
+        groups:
+          - name: kubernetes-container-health
+            rules:
+              - alert: KubernetesContainerOOMKilled
+                expr: |
+                  increase(kube_pod_container_status_restarts_total[10m]) > 0
+                  and on (namespace, pod, container)
+                  kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
+                labels:
+                  severity: warning
+                annotations:
+                  summary: Kubernetes container was OOMKilled
+                  description: >-
+                    Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }}
+                    was OOMKilled.
+              - alert: KubernetesPodProbeFailure
+                expr: |
+                  increase(prober_probe_total{probe_type=~"(?i)(readiness|liveness)", result="failed"}[5m]) > 0
+                labels:
+                  severity: warning
+                annotations:
+                  summary: Kubernetes pod readiness or liveness probe failed
+                  description: >-
+                    The {{ $labels.probe_type }} probe failed for container {{ $labels.container }}
+                    in pod {{ $labels.namespace }}/{{ $labels.pod }}.
+    defaultRules:
+      create: true
+    grafana:
+      defaultDashboardsEnabled: true
+    prometheus:
+      prometheusSpec:
+        retention: 2d
+        externalLabels:
+          cluster: dev
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false

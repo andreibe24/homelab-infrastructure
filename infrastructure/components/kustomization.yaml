@@ -17,3 +17,5 @@ resources:
   - ./reflector/reflector.ks.yaml
   - ./reloader/reloader.namespace.yaml
   - ./reloader/reloader.ks.yaml
+  - ./monitoring/monitoring.namespace.yaml
+  - ./monitoring/monitoring.ks.yaml
