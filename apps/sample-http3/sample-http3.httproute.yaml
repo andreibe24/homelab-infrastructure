@@ -7,10 +7,9 @@ spec:
   parentRefs:
     - name: external
       namespace: gateway
-      sectionName: https-wildcard
+      sectionName: https-http3
   hostnames:
     - sample-http3.localhost
-    - sample-http3-h2.localhost
   rules:
     - backendRefs:
         - name: sample-http3
