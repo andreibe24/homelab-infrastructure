@@ -5,8 +5,8 @@ namespace: gateway
 resources:
   - gatewayclass.yaml
   - external.envoyproxy.yaml
-  - external.clienttrafficpolicy.yaml
   - external-http2.clienttrafficpolicy.yaml
+  - external-http3.clienttrafficpolicy.yaml
   - external.gateway.yaml
   - localhost-tls.certificate.yaml
   - http-to-https-redirect.httproute.yaml
