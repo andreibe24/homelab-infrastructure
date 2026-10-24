@@ -46,6 +46,12 @@ data:
         </tbody>
       </table>
       <p class="note">Timings come from the browser Resource Timing API. Results vary with browser support, network conditions, and connection reuse. A successful HTTP/3 test requires every measured download to report h3.</p>
+      <section aria-labelledby="curl-http3-heading">
+        <h2 id="curl-http3-heading">Test the HTTP/3 connection with curl</h2>
+        <p>With an HTTP/3-enabled curl build, run this from a machine that can reach the Gateway:</p>
+        <pre><code>curl -k --http3-only https://sample-http3.localhost:8443 --head</code></pre>
+        <p class="note">The <code>-k</code> option skips certificate verification for this local test.</p>
+      </section>
       <script>
         const runButton = document.querySelector("#run");
         const status = document.querySelector("#status");

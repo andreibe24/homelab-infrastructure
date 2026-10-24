@@ -2,7 +2,6 @@ My Todo List:
 
 # Security
 ## cilium -> network policies
-## Falco policies for malware detection + alerts
 
 # whilist: who is allowed to access apps (k8s) externally
 
@@ -61,7 +60,3 @@ buildkit or kaniko for multi-arch, maybe somthing docker-bake style?) and push a
 ## alertmanager
 
 notify incidents, k8s cronjob poller fails, etc. 
-
-# Renovate
-
-Update packages automatically, once a day

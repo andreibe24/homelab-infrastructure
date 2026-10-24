@@ -28,6 +28,8 @@ end
 *How*: Here is exactly how:
 ```bash
 sudo apt update && sudo xargs -a packages.txt apt install -y
+
+xargs -r -a snaps.txt sudo snap install
 ```
 
 
