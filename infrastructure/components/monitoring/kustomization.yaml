@@ -5,5 +5,4 @@ namespace: monitoring
 resources:
   - ./kube-prometheus-stack.ocirepository.yaml
   - ./kube-prometheus-stack.helmrelease.yaml
-  - ./alertmanager-slack.secret.yaml
   - ./grafana.httproute.yaml

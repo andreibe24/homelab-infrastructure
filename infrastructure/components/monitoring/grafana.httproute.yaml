@@ -9,7 +9,7 @@ spec:
       namespace: gateway
       sectionName: https-wildcard
   hostnames:
-    - "grafana.localhost"
+    - grafana.localhost
   rules:
     - backendRefs:
         - name: monitoring-grafana
