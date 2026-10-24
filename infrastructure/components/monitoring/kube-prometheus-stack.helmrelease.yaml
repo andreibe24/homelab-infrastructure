@@ -88,6 +88,6 @@ spec:
       defaultDashboardsEnabled: true
     prometheus:
       prometheusSpec:
-        retention: 15d
+        retention: 2d
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
