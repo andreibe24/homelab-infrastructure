@@ -10,11 +10,7 @@ spec:
   commonName: localhost
   dnsNames:
     - "localhost"
-    - "sample-http2.localhost"
-    - "sample-http3.localhost"
-    - "flux.localhost"
-    - "falco.localhost"
-    - "whoami.localhost"
+    - "*.localhost"
   issuerRef:
     name: root-ca-issuer
     kind: ClusterIssuer

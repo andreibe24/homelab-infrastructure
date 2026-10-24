@@ -13,20 +13,13 @@ data:
       file_server
     }
 
-    http://sample-http2.localhost:8080 {
-      root * /srv
-      header Access-Control-Allow-Origin "*"
-      header Access-Control-Expose-Headers "Content-Length"
-      header Timing-Allow-Origin "*"
-      file_server
-    }
   index.html: |
     <!doctype html>
     <html lang="en">
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>HTTP/2 vs HTTP/3 benchmark</title>
+      <title>HTTP/3 Gateway test</title>
       <style>
         :root { color-scheme: light dark; font: 16px system-ui, sans-serif; }
         body { max-width: 900px; margin: 3rem auto; padding: 0 1rem; }
@@ -40,10 +33,10 @@ data:
       </style>
     </head>
     <body>
-      <h1>HTTP/2 vs HTTP/3</h1>
-      <p>Download the same 8 MiB file from two endpoints and compare browser network timings. The HTTP/2 endpoint does not advertise HTTP/3; the HTTP/3 endpoint enables QUIC. Confirm the reported protocol to verify each connection.</p>
+      <h1>HTTP/3 Gateway test</h1>
+      <p>Download an 8 MiB file through the HTTP/3-enabled Gateway. The Gateway advertises HTTP/3; the protocol column shows what the browser actually negotiated. Clients may use HTTP/2 or HTTP/1.1 as a fallback.</p>
       <button id="run">Run benchmark</button>
-      <p id="status" role="status">Ready. The first run warms both endpoints before measuring.</p>
+      <p id="status" role="status">Ready. The endpoint is warmed up before measurements.</p>
       <table>
         <thead>
           <tr><th>Endpoint</th><th>Protocol</th><th>Average</th><th>Fastest</th><th>DNS</th><th>Connect</th><th>TLS</th><th>Bytes</th></tr>
@@ -52,7 +45,7 @@ data:
           <tr><td colspan="8">Run the benchmark to see results.</td></tr>
         </tbody>
       </table>
-      <p class="note">Timings come from the browser Resource Timing API. Results vary with browser support, network conditions, and whether a connection is reused. Confirm the reported protocol is h3 to verify HTTP/3 was used.</p>
+      <p class="note">Timings come from the browser Resource Timing API. Results vary with browser support, network conditions, and connection reuse. A successful HTTP/3 test requires every measured download to report h3.</p>
       <script>
         const runButton = document.querySelector("#run");
         const status = document.querySelector("#status");
@@ -60,8 +53,7 @@ data:
         const rounds = 3;
         const fileSize = 8 * 1024 * 1024;
         const endpoints = [
-          { name: "HTTP/2", host: "sample-http2.localhost", port: 8443 },
-          { name: "HTTP/3 (QUIC)", host: "sample-http3.localhost", port: 8443 }
+          { name: "sample-http3 app", expectedProtocol: "h3", host: "sample-http3.localhost", port: 8443 }
         ];
 
         async function download(host, port, label) {
@@ -95,11 +87,12 @@ data:
         runButton.addEventListener("click", async () => {
           runButton.disabled = true;
           results.replaceChildren();
-          status.textContent = "Warming up both endpoints…";
+          status.textContent = "Warming up the endpoint and discovering HTTP/3…";
           try {
-            await download("sample-http2.localhost", 8443, "warmup");
-            await download("sample-http3.localhost", 8443, "warmup");
-            await download("sample-http3.localhost", 8443, "warmup");
+            for (const endpoint of endpoints) {
+              await download(endpoint.host, endpoint.port, "warmup");
+              await download(endpoint.host, endpoint.port, "warmup");
+            }
             const measured = endpoints.map(endpoint => ({ ...endpoint, samples: [] }));
             for (let i = 0; i < rounds; i++) {
               const order = i % 2 === 0 ? endpoints : [...endpoints].reverse();
@@ -129,13 +122,15 @@ data:
               }
               results.append(row);
             }
-            const h2 = measured.find(endpoint => endpoint.name === "HTTP/2");
-            const h3 = measured.find(endpoint => endpoint.name === "HTTP/3 (QUIC)");
-            const h2Protocol = [...new Set(h2.samples.map(sample => sample.protocol))].join(", ");
-            const h3Protocol = [...new Set(h3.samples.map(sample => sample.protocol))].join(", ");
-            status.textContent = h2Protocol.includes("h2") && h3Protocol.includes("h3")
-              ? "Complete. The endpoints negotiated HTTP/2 and HTTP/3 as expected."
-              : `Check protocols: HTTP/2 endpoint reported "${h2Protocol}", HTTP/3 endpoint reported "${h3Protocol}".`;
+            const allHttp3 = measured.every(endpoint =>
+              endpoint.samples.every(sample => sample.protocol === endpoint.expectedProtocol)
+            );
+            const protocols = measured
+              .map(endpoint => `${endpoint.name}: ${[...new Set(endpoint.samples.map(sample => sample.protocol))].join(", ")}`)
+              .join("; ");
+            status.textContent = allHttp3
+              ? "Complete. All measured requests negotiated HTTP/3."
+              : `HTTP/3 was not negotiated for every request. Actual protocols: ${protocols}.`;
           } catch (error) {
             status.textContent = `Benchmark failed: ${error.message}`;
           } finally {

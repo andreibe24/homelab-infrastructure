@@ -8,11 +8,10 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: external
-      sectionName: https-http3
   http2: {}
   http3: {}
   tls:
-    # Offer h2 (HTTP/2) and http/1.1 (the fallback)
+    # HTTP/3 uses QUIC; retain HTTP/2 and HTTP/1.1 over TCP as fallbacks.
     alpnProtocols:
       - h2
       - http/1.1
