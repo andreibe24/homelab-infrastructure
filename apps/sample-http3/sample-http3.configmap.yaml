@@ -41,7 +41,7 @@ data:
     </head>
     <body>
       <h1>HTTP/2 vs HTTP/3</h1>
-      <p>Download the same 8 MiB file several times from two endpoints and compare browser network timings. HTTP/3 uses QUIC over UDP; the control endpoint does not advertise HTTP/3.</p>
+      <p>Download the same 8 MiB file from two endpoints and compare browser network timings. The HTTP/2 endpoint does not advertise HTTP/3; the HTTP/3 endpoint enables QUIC. Confirm the reported protocol to verify each connection.</p>
       <button id="run">Run benchmark</button>
       <p id="status" role="status">Ready. The first run warms both endpoints before measuring.</p>
       <table>
@@ -129,11 +129,13 @@ data:
               }
               results.append(row);
             }
+            const h2 = measured.find(endpoint => endpoint.name === "HTTP/2");
             const h3 = measured.find(endpoint => endpoint.name === "HTTP/3 (QUIC)");
-            const protocol = [...new Set(h3.samples.map(sample => sample.protocol))].join(", ");
-            status.textContent = protocol.includes("h3")
-              ? "Complete. The HTTP/3 endpoint negotiated h3."
-              : `Complete, but the browser reported "${protocol}" for the HTTP/3 endpoint. Check browser HTTP/3 support and UDP reachability.`;
+            const h2Protocol = [...new Set(h2.samples.map(sample => sample.protocol))].join(", ");
+            const h3Protocol = [...new Set(h3.samples.map(sample => sample.protocol))].join(", ");
+            status.textContent = h2Protocol.includes("h2") && h3Protocol.includes("h3")
+              ? "Complete. The endpoints negotiated HTTP/2 and HTTP/3 as expected."
+              : `Check protocols: HTTP/2 endpoint reported "${h2Protocol}", HTTP/3 endpoint reported "${h3Protocol}".`;
           } catch (error) {
             status.textContent = `Benchmark failed: ${error.message}`;
           } finally {

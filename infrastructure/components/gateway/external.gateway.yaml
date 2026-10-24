@@ -32,18 +32,6 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-    - name: https-http2
-      protocol: HTTPS
-      port: 8443
-      hostname: "sample-http2.localhost"
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - kind: Secret
-            name: localhost-tls
-      allowedRoutes:
-        namespaces:
-          from: All
     - name: https-wildcard
       protocol: HTTPS
       port: 8443

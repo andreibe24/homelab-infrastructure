@@ -7,7 +7,7 @@ spec:
   parentRefs:
     - name: external
       namespace: gateway
-      sectionName: https-http2
+      sectionName: https-wildcard
   hostnames:
     - sample-http2.localhost
   rules:
