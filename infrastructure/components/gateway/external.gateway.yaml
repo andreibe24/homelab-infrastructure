@@ -20,18 +20,6 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
-    - name: https-http3
-      protocol: HTTPS
-      port: 8443
-      hostname: "sample-http3.localhost"
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - kind: Secret
-            name: localhost-tls
-      allowedRoutes:
-        namespaces:
-          from: All
     - name: https-wildcard
       protocol: HTTPS
       port: 8443
