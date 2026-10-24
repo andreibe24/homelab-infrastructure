@@ -48,6 +48,7 @@ spec:
           group_by:
             - alertname
             - namespace
+            - cluster
           group_wait: 30s
           group_interval: 5m
           repeat_interval: 12h
@@ -60,6 +61,7 @@ spec:
           - name: slack
             slack_configs:
               - api_url_file: /etc/alertmanager/secrets/alertmanager-slack/slack_api_url
+                title: '[Cluster: {{ .CommonLabels.cluster }}] {{ .CommonLabels.alertname }}'
                 send_resolved: true
           - name: "null"
       alertmanagerSpec:
@@ -82,6 +84,16 @@ spec:
                   description: >-
                     Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }}
                     was OOMKilled.
+              - alert: KubernetesPodProbeFailure
+                expr: |
+                  increase(prober_probe_total{probe_type=~"(?i)(readiness|liveness)", result="failed"}[5m]) > 0
+                labels:
+                  severity: warning
+                annotations:
+                  summary: Kubernetes pod readiness or liveness probe failed
+                  description: >-
+                    The {{ $labels.probe_type }} probe failed for container {{ $labels.container }}
+                    in pod {{ $labels.namespace }}/{{ $labels.pod }}.
     defaultRules:
       create: true
     grafana:
@@ -89,5 +101,7 @@ spec:
     prometheus:
       prometheusSpec:
         retention: 2d
+        externalLabels:
+          cluster: dev
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
