@@ -2,7 +2,6 @@
 # Bootstrap a single-node kind cluster with Cilium, the Flux Operator and Flux.
 #
 # Usage:  ./bootstrap.sh
-# Optional: GIT_USERNAME and GIT_TOKEN in the environment skip the prompts.
 set -euo pipefail
 
 # Paths below are relative to the directory this script lives in.
@@ -62,25 +61,6 @@ if kind get clusters 2>/dev/null | grep -qx "$CLUSTER_NAME"; then
 fi
 
 # ---------------------------------------------------------------------------
-# Git credentials: ask up front so the script never stalls halfway through.
-# ---------------------------------------------------------------------------
-GIT_USERNAME="${GIT_USERNAME:-}"
-GIT_TOKEN="${GIT_TOKEN:-}"
-
-if [[ -z "$GIT_USERNAME" || -z "$GIT_TOKEN" ]]; then
-  [[ -t 0 ]] || fail "GIT_USERNAME and GIT_TOKEN must be set when running non-interactively"
-fi
-if [[ -z "$GIT_USERNAME" ]]; then
-  read -r -p "Git username: " GIT_USERNAME
-fi
-if [[ -z "$GIT_TOKEN" ]]; then
-  read -r -s -p "Git token (input hidden): " GIT_TOKEN
-  echo
-fi
-[[ -n "$GIT_USERNAME" ]] || fail "Git username cannot be empty"
-[[ -n "$GIT_TOKEN" ]]    || fail "Git token cannot be empty"
-
-# ---------------------------------------------------------------------------
 # Bootstrap
 # ---------------------------------------------------------------------------
 
@@ -109,14 +89,9 @@ helm install cilium \
   -f "$CILIUM_VALUES" \
   --wait
 
-# 4. Namespace and Git credentials (kept out of Git)
-log "Creating flux-system namespace and git-creds secret"
+# 4. Flux namespace
+log "Creating flux-system namespace"
 kubectl create namespace flux-system
-printf '%s' "$GIT_TOKEN" | kubectl create secret generic git-creds \
-  --namespace=flux-system \
-  --from-literal=username="$GIT_USERNAME" \
-  --from-file=password=/dev/stdin
-unset GIT_TOKEN
 
 # 5. SOPS decryption key
 log "Creating SOPS decryption key secret"

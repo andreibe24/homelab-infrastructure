@@ -30,7 +30,6 @@ spec:
     ref: refs/heads/main
     path: clusters/dev/init-manifests
     interval: 1m
-    pullSecret: git-creds # credentials for source
   commonMetadata:
     labels:
       app.kubernetes.io/managed-by: flux
