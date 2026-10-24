@@ -4,6 +4,9 @@ kind: EnvoyProxy
 metadata:
   name: external
 spec:
+  # Cilium's host-network Envoy uses base ID 0 on this node.
+  extraArgs:
+    - --base-id 1
   provider:
     type: Kubernetes
     kubernetes:
