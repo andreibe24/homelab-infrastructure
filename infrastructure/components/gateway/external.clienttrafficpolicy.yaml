@@ -11,3 +11,8 @@ spec:
       sectionName: https-http3
   http2: {}
   http3: {}
+  tls:
+    # Offer h2 (HTTP/2) and http/1.1 (the fallback)
+    alpnProtocols:
+      - h2
+      - http/1.1
