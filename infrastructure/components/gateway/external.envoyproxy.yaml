@@ -15,6 +15,11 @@ spec:
           type: StrategicMerge
           value:
             spec:
+              strategy:
+                type: RollingUpdate
+                rollingUpdate:
+                  maxSurge: 0
+                  maxUnavailable: 1
               template:
                 spec:
                   # kind port mappings reach the node network namespace directly.
