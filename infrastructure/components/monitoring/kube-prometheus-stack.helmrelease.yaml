@@ -69,6 +69,7 @@ spec:
                   {{ if .Labels.pod }}*Pod:* `{{ .Labels.pod }}`{{ end }}
                   {{ if .Labels.node }}*Node:* `{{ .Labels.node }}`{{ end }}
                   {{ if and .Labels.kind .Labels.name }}*Resource:* `{{ .Labels.kind }}/{{ .Labels.name }}`{{ end }}
+                  {{ if and .Labels.customresource_kind .Labels.name }}*Resource:* `{{ .Labels.customresource_kind }}/{{ .Labels.name }}`{{ end }}
                   {{ if .Labels.container }}*Container:* `{{ .Labels.container }}`{{ end }}
                   {{ if .Labels.probe_type }}*Probe:* `{{ .Labels.probe_type }}`{{ end }}
                   {{ if .Labels.instance }}*Instance:* `{{ .Labels.instance }}`{{ end }}
@@ -77,6 +78,9 @@ spec:
                 send_resolved: true
           - name: "null"
       alertmanagerSpec:
+        podMetadata:
+          annotations:
+            reloader.stakater.com/auto: "true"
         secrets:
           - alertmanager-slack
     additionalPrometheusRulesMap:
@@ -106,6 +110,129 @@ spec:
                   description: >-
                     The {{ $labels.probe_type }} probe failed for container {{ $labels.container }}
                     in pod {{ $labels.namespace }}/{{ $labels.pod }}.
+              - alert: FluxKustomizationNotReady
+                expr: |
+                  gotk_resource_info{customresource_kind="Kustomization", ready="False"} == 1
+                labels:
+                  severity: warning
+                annotations:
+                  summary: Flux Kustomization is not ready
+                  description: >-
+                    Flux Kustomization {{ $labels.name }} in namespace {{ $labels.exported_namespace }}
+                    is not Ready.
+              - alert: FluxGitRepositoryNotReady
+                expr: |
+                  gotk_resource_info{customresource_kind="GitRepository", ready="False"} == 1
+                labels:
+                  severity: warning
+                annotations:
+                  summary: Flux GitRepository is not ready
+                  description: >-
+                    Flux GitRepository {{ $labels.name }} in namespace {{ $labels.exported_namespace }}
+                    is not Ready.
+              - alert: FluxHelmReleaseNotReady
+                expr: |
+                  gotk_resource_info{customresource_kind="HelmRelease", ready="False"} == 1
+                labels:
+                  severity: warning
+                annotations:
+                  summary: Flux HelmRelease is not ready
+                  description: >-
+                    Flux HelmRelease {{ $labels.name }} in namespace {{ $labels.exported_namespace }}
+                    is not Ready.
+    kube-state-metrics:
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
+      rbac:
+        extraRules:
+          - apiGroups:
+              - kustomize.toolkit.fluxcd.io
+              - source.toolkit.fluxcd.io
+              - helm.toolkit.fluxcd.io
+            resources:
+              - kustomizations
+              - gitrepositories
+              - helmreleases
+            verbs:
+              - list
+              - watch
+      customResourceState:
+        enabled: true
+        config:
+          spec:
+            resources:
+              - groupVersionKind:
+                  group: kustomize.toolkit.fluxcd.io
+                  version: v1
+                  kind: Kustomization
+                metricNamePrefix: gotk
+                metrics:
+                  - name: resource_info
+                    help: The current state of a Flux Kustomization resource.
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name:
+                            - metadata
+                            - name
+                    labelsFromPath:
+                      exported_namespace:
+                        - metadata
+                        - namespace
+                      ready:
+                        - status
+                        - conditions
+                        - "[type=Ready]"
+                        - status
+              - groupVersionKind:
+                  group: source.toolkit.fluxcd.io
+                  version: v1
+                  kind: GitRepository
+                metricNamePrefix: gotk
+                metrics:
+                  - name: resource_info
+                    help: The current state of a Flux GitRepository resource.
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name:
+                            - metadata
+                            - name
+                    labelsFromPath:
+                      exported_namespace:
+                        - metadata
+                        - namespace
+                      ready:
+                        - status
+                        - conditions
+                        - "[type=Ready]"
+                        - status
+              - groupVersionKind:
+                  group: helm.toolkit.fluxcd.io
+                  version: v2
+                  kind: HelmRelease
+                metricNamePrefix: gotk
+                metrics:
+                  - name: resource_info
+                    help: The current state of a Flux HelmRelease resource.
+                    each:
+                      type: Info
+                      info:
+                        labelsFromPath:
+                          name:
+                            - metadata
+                            - name
+                    labelsFromPath:
+                      exported_namespace:
+                        - metadata
+                        - namespace
+                      ready:
+                        - status
+                        - conditions
+                        - "[type=Ready]"
+                        - status
     defaultRules:
       create: true
     grafana:
