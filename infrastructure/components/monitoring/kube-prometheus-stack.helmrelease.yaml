@@ -62,6 +62,18 @@ spec:
             slack_configs:
               - api_url_file: /etc/alertmanager/secrets/alertmanager-slack/slack_api_url
                 title: '[Cluster: {{ .CommonLabels.cluster }}] {{ .CommonLabels.alertname }}'
+                text: |-
+                  {{ range .Alerts }}
+                  {{ if .Labels.namespace }}*Namespace:* `{{ .Labels.namespace }}`{{ end }}
+                  {{ if .Labels.exported_namespace }}*Namespace:* `{{ .Labels.exported_namespace }}`{{ end }}
+                  {{ if .Labels.pod }}*Pod:* `{{ .Labels.pod }}`{{ end }}
+                  {{ if .Labels.node }}*Node:* `{{ .Labels.node }}`{{ end }}
+                  {{ if and .Labels.kind .Labels.name }}*Resource:* `{{ .Labels.kind }}/{{ .Labels.name }}`{{ end }}
+                  {{ if .Labels.container }}*Container:* `{{ .Labels.container }}`{{ end }}
+                  {{ if .Labels.probe_type }}*Probe:* `{{ .Labels.probe_type }}`{{ end }}
+                  {{ if .Labels.instance }}*Instance:* `{{ .Labels.instance }}`{{ end }}
+                  {{ if .Annotations.description }}{{ .Annotations.description }}{{ end }}
+                  {{ end }}
                 send_resolved: true
           - name: "null"
       alertmanagerSpec:
