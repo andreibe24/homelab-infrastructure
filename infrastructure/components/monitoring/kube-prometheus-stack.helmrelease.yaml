@@ -67,8 +67,7 @@ spec:
                 title: '[Cluster: {{ .CommonLabels.cluster }}] {{ .CommonLabels.alertname }}'
                 text: |-
                   {{ range .Alerts }}
-                  {{ if .Labels.namespace }}*Namespace:* `{{ .Labels.namespace }}`{{ end }}
-                  {{ if .Labels.exported_namespace }}*Namespace:* `{{ .Labels.exported_namespace }}`{{ end }}
+                  {{ if .Labels.namespace }}*Namespace:* `{{ .Labels.namespace }}`{{ else if .Labels.exported_namespace }}*Namespace:* `{{ .Labels.exported_namespace }}`{{ end }}
                   {{ if .Labels.pod }}*Pod:* `{{ .Labels.pod }}`{{ end }}
                   {{ if .Labels.node }}*Node:* `{{ .Labels.node }}`{{ end }}
                   {{ if and .Labels.kind .Labels.name }}*Resource:* `{{ .Labels.kind }}/{{ .Labels.name }}`{{ end }}
@@ -115,10 +114,13 @@ spec:
                     in pod {{ $labels.namespace }}/{{ $labels.pod }}.
               - alert: FluxKustomizationNotReady
                 expr: |
-                  gotk_resource_info{customresource_kind="Kustomization", ready="False"} == 1
+                  max by (customresource_kind, exported_namespace, name) (
+                    gotk_resource_info{customresource_kind="Kustomization", ready="False"}
+                  ) == 1
                 for: 30m
                 labels:
                   severity: warning
+                  namespace: "{{ $labels.exported_namespace }}"
                 annotations:
                   summary: Flux Kustomization is not ready
                   description: >-
@@ -126,10 +128,13 @@ spec:
                     is not Ready.
               - alert: FluxGitRepositoryNotReady
                 expr: |
-                  gotk_resource_info{customresource_kind="GitRepository", ready="False"} == 1
+                  max by (customresource_kind, exported_namespace, name) (
+                    gotk_resource_info{customresource_kind="GitRepository", ready="False"}
+                  ) == 1
                 for: 30m
                 labels:
                   severity: warning
+                  namespace: "{{ $labels.exported_namespace }}"
                 annotations:
                   summary: Flux GitRepository is not ready
                   description: >-
@@ -137,10 +142,13 @@ spec:
                     is not Ready.
               - alert: FluxHelmReleaseNotReady
                 expr: |
-                  gotk_resource_info{customresource_kind="HelmRelease", ready="False"} == 1
+                  max by (customresource_kind, exported_namespace, name) (
+                    gotk_resource_info{customresource_kind="HelmRelease", ready="False"}
+                  ) == 1
                 for: 30m
                 labels:
                   severity: warning
+                  namespace: "{{ $labels.exported_namespace }}"
                 annotations:
                   summary: Flux HelmRelease is not ready
                   description: >-
