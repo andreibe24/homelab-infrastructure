@@ -49,9 +49,11 @@ spec:
             - alertname
             - namespace
             - cluster
+          # Slack waits 30s for a new alert group before its first notification.
           group_wait: 30s
           group_interval: 5m
           repeat_interval: 12h
+          # Only the allow-listed alert names below are sent to Slack; all others are discarded.
           receiver: "null"
           routes:
             - receiver: "null"
@@ -88,6 +90,8 @@ spec:
     additionalPrometheusRulesMap:
       cluster-health:
         groups:
+          # OOM and probe alerts have no `for` delay: they fire on the first rule evaluation
+          # that sees the condition (30s evaluation interval), then Slack applies group_wait.
           - name: kubernetes-container-health
             rules:
               - alert: KubernetesContainerOOMKilled
@@ -112,6 +116,7 @@ spec:
                   description: >-
                     The {{ $labels.probe_type }} probe failed for container {{ $labels.container }}
                     in pod {{ $labels.namespace }}/{{ $labels.pod }}.
+              # Flux alerts below require Ready=False to persist continuously for 30 minutes.
               - alert: FluxKustomizationNotReady
                 expr: |
                   max by (customresource_kind, exported_namespace, name) (
@@ -247,6 +252,7 @@ spec:
                         - conditions
                         - "[type=Ready]"
                         - status
+    # Chart defaults delay KubePodCrashLooping and KubeNodeNotReady by 15m each.
     defaultRules:
       create: true
       rules:
