@@ -51,6 +51,13 @@ spec:
 
     # /etc/falco/rules.d: Custom security policies detecting malicious behaviors in the cluster
     customRules:
+      rules-drop-execute-allowlist.yaml: |-
+        # Disabled in dev because CNI and runtime activity cannot be safely distinguished from false positives.
+        - rule: Drop and execute new binary in container
+          enabled: false
+          override:
+            enabled: replace
+
       rules-malware.yaml: |-
         # Detect common cryptomining process execution
         - rule: Detect Crypto Miner Execution
