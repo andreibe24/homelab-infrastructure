@@ -1,0 +1,14 @@
+{
+  "name": "homelab-workflow-dispatcher",
+  "main": "worker.js",
+  "compatibility_date": "2025-01-01",
+  "vars": {
+    "TARGET_REPOSITORY": "andreibe24/homelab-infrastructure",
+    "TARGET_WORKFLOW": "renovate.yaml",
+    "TARGET_REF": "main",
+    "TARGET_INPUTS_JSON": "{}"
+  },
+  "triggers": {
+    "crons": ["43 1-23/2 * * *"]
+  }
+}

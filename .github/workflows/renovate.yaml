@@ -2,8 +2,12 @@ name: Renovate
 
 on:
   schedule:
-    - cron: "20 */4 * * *"           # 00:20, 04:20, 08:20, 12:20, 16:20, 20:20
-      timezone: "Europe/Bucharest"  # IANA zone, DST handled by GitHub
+    - cron: "13 1-23/2 * * *"          # At minute 13 past every 2nd hour from 1 through 23
+  ## External workflow dispatchers simulate cron behavior on this github repo
+  # Docs: ./external-workflow-dispatchers/README.md
+  # 1. Gitlab -> https://gitlab.com/andreibe24/homelab-infrastructure 
+  # cron: "33 1-23/2 * * *"   # At minute 13 past every 2nd hour from 1 through 23
+  # 2. Cloudflare worker -> TODO
   workflow_dispatch:
 
 permissions:

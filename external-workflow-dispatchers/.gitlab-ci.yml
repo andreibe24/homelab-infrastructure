@@ -1,0 +1,113 @@
+# Standalone GitLab pipeline. Copy this file to the GitLab project's root as .gitlab-ci.yml.
+stages:
+  - trigger
+
+trigger-github-workflow:
+  stage: trigger
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl jq openssl
+  script:
+    - |
+      set -eu
+
+      : "${GITHUB_APP_ID:?Set GITHUB_APP_ID in GitLab CI/CD variables}"
+      : "${GITHUB_INSTALLATION_ID:?Set GITHUB_INSTALLATION_ID in GitLab CI/CD variables}"
+      : "${GITHUB_APP_PRIVATE_KEY_FILE:?Set GITHUB_APP_PRIVATE_KEY_FILE as a GitLab File variable}"
+      if ! printf '%s' "$GITHUB_APP_ID" | grep -Eq '^[0-9]+$'; then
+        echo "GITHUB_APP_ID must be the numeric GitHub App ID" >&2
+        exit 1
+      fi
+      if ! printf '%s' "$GITHUB_INSTALLATION_ID" | grep -Eq '^[0-9]+$'; then
+        echo "GITHUB_INSTALLATION_ID must be the numeric installation ID" >&2
+        exit 1
+      fi
+
+      target_repository="${TARGET_REPOSITORY:-andreibe24/homelab-infrastructure}"
+      target_workflow="${TARGET_WORKFLOW:-renovate.yaml}"
+      target_ref="${TARGET_REF:-main}"
+      inputs_json="${TARGET_INPUTS_JSON:-}"
+      if [ -z "$inputs_json" ]; then
+        inputs_json='{}'
+      fi
+
+      if ! printf '%s' "$target_repository" | grep -Eq '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'; then
+        echo "TARGET_REPOSITORY must be in owner/repository format" >&2
+        exit 1
+      fi
+      if ! printf '%s' "$target_workflow" | grep -Eq '^[A-Za-z0-9_.-]+$'; then
+        echo "TARGET_WORKFLOW must be a workflow filename or numeric ID" >&2
+        exit 1
+      fi
+      if ! printf '%s' "$inputs_json" | jq -e 'type == "object"' >/dev/null; then
+        echo "TARGET_INPUTS_JSON must be a JSON object" >&2
+        exit 1
+      fi
+      dispatch_body="$(jq -cn \
+        --arg ref "$target_ref" \
+        --argjson inputs "$inputs_json" \
+        'if $inputs == {} then {ref:$ref} else {ref:$ref,inputs:$inputs} end')"
+
+      umask 077
+      key_file="$(mktemp)"
+      response_file="$(mktemp)"
+      trap 'rm -f "$key_file" "$response_file"' EXIT
+      cp "$GITHUB_APP_PRIVATE_KEY_FILE" "$key_file"
+
+      base64url() {
+        openssl base64 -A | tr '+/' '-_' | tr -d '='
+      }
+
+      now="$(date +%s)"
+      header="$(printf '%s' '{"alg":"RS256","typ":"JWT"}' | base64url)"
+      payload="$(jq -cn \
+        --argjson iat "$((now - 60))" \
+        --argjson exp "$((now + 540))" \
+        --arg iss "$GITHUB_APP_ID" \
+        '{iat:$iat,exp:$exp,iss:$iss}' | base64url)"
+      unsigned="${header}.${payload}"
+      signature="$(printf '%s' "$unsigned" | openssl dgst -sha256 -sign "$key_file" -binary | base64url)"
+      jwt="${unsigned}.${signature}"
+
+      token_status="$(
+        curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
+          --request POST \
+          --header "Authorization: Bearer ${jwt}" \
+          --header "Accept: application/vnd.github+json" \
+          --header "X-GitHub-Api-Version: 2022-11-28" \
+          --header "User-Agent: gitlab-workflow-dispatch" \
+          "https://api.github.com/app/installations/${GITHUB_INSTALLATION_ID}/access_tokens"
+      )"
+      if [ "$token_status" != "201" ]; then
+        echo "GitHub App installation token request failed with HTTP ${token_status}:" >&2
+        cat "$response_file" >&2
+        echo >&2
+        echo "For a 404, verify that GITHUB_INSTALLATION_ID belongs to this App and is installed on the target account." >&2
+        exit 1
+      fi
+      if ! installation_token="$(jq -er '.token | select(type == "string" and length > 0)' "$response_file" 2>/dev/null)"; then
+        echo "GitHub returned HTTP 201 without an installation token:" >&2
+        cat "$response_file" >&2
+        echo >&2
+        exit 1
+      fi
+
+      status="$(
+        curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
+          --request POST \
+          --header "Authorization: Bearer ${installation_token}" \
+          --header "Accept: application/vnd.github+json" \
+          --header "X-GitHub-Api-Version: 2022-11-28" \
+          --header "User-Agent: gitlab-workflow-dispatch" \
+          --header 'Content-Type: application/json' \
+          --data "$dispatch_body" \
+          "https://api.github.com/repos/${target_repository}/actions/workflows/${target_workflow}/dispatches"
+      )"
+      if [ "$status" != "204" ]; then
+        echo "Workflow dispatch failed with HTTP ${status}" >&2
+        cat "$response_file" >&2
+        echo >&2
+        exit 1
+      fi
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
