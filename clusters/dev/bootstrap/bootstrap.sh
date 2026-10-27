@@ -17,7 +17,7 @@ GATEWAY_API_VERSION="v1.6.3"
 # renovate: datasource=docker depName=quay.io/cilium/charts/cilium
 CILIUM_VERSION="1.20.4"
 # renovate: datasource=docker depName=ghcr.io/controlplaneio-fluxcd/charts/flux-operator
-FLUX_OPERATOR_VERSION="0.62.0"
+FLUX_OPERATOR_VERSION="0.62.1"
 
 CILIUM_VALUES="../../../infrastructure/imported/cilium/custom.helmvalues.yaml"
 OPERATOR_VALUES="../../../infrastructure/imported/flux-operator/custom.helmvalues.yaml"
