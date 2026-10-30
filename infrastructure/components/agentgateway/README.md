@@ -115,12 +115,34 @@ This confirms the tested credential/account combination, not arbitrary OAuth tok
    reconciliation, then run:
 
    ```sh
-   bash infrastructure/components/agentgateway-config/forum-app.test.sh
+   python3 infrastructure/components/agentgateway-config/forum-app.test.py --live
    ```
 
-   The script uses `https://agentgateway.localhost:8443/v1/responses` and `curl -k`
-   for the local development certificate. HTTP 200 with an assistant response
+   Live mode requires Python and kubectl, not Docker or PyYAML. It uses
+   `https://agentgateway.localhost:8443/v1/responses` and disables TLS verification
+   for the local development certificate (equivalent to `curl -k`).
+   HTTP 200 with an assistant response
    confirms the full path; Flux readiness alone does not confirm authentication.
+   It also checks missing/invalid client keys, model and output-limit restrictions,
+   streaming/multiple-completion rejection, the 1MiB request limit, and synthetic
+   sensitive-data patterns including tool arguments. It exits nonzero on failure
+   without printing response bodies or credentials.
+
+   Pause other traffic using `forum-app` and ensure daily token quota is available.
+   The script waits for a new minute before quota-dependent checks to avoid
+   interference from earlier runs. The default checks consume request quota and
+   make one real inference request. To additionally test the shared
+   10-requests/minute ceiling:
+
+   ```sh
+   python3 infrastructure/components/agentgateway-config/forum-app.test.py --live --rate-limit
+   ```
+
+   This waits for the next minute, then sends ten guard-rejected requests and
+   expects the eleventh to return 429. These probes should not reach Copilot,
+   but leave the shared request quota exhausted until the next minute.
+   Live daily-budget exhaustion, response-guard checks, and outage injection are
+   intentionally excluded; use the isolated `forum-app.test.py` suite instead.
 
 ### OAuth lifetime and permission limits
 
@@ -287,6 +309,10 @@ request quota, and generated responses can consume token budget even if blocked.
 These LLM token counters are not GitHub premium-request or billing counters.
 
 ### Local policy checks
+
+The single `forum-app.test.py` entry point supports isolated checks by default
+and deployed HTTPS checks with `--live` as described above. Live mode accepts
+`--url https://host:port/v1/responses` to override the endpoint.
 
 On Linux with Docker and PyYAML available, run from the repository root:
 

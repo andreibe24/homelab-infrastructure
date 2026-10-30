@@ -1,15 +1,20 @@
-"""Exercise the manifest's policy rules with real proxy/limiter/Redis containers.
+"""Test forum-app policies locally, or against HTTPS/Copilot with --live.
 
-Requires Linux, Docker, and PyYAML. Uses fake credentials and a local mock LLM;
-does not access Copilot, the SOPS private key, or the Kubernetes cluster.
+Default: Linux, Docker, PyYAML, fake credentials, and a mock LLM.
+--live: kubectl and Python's standard library; consumes shared quota and makes
+one real inference request. --rate-limit also exhausts the live minute quota.
 """
 
+import argparse
+import base64
 import copy
 import http.server
 import json
 import pathlib
 import socket
+import ssl
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -18,14 +23,13 @@ import urllib.error
 import urllib.request
 import uuid
 
-import yaml
-
-
 ROOT = pathlib.Path(__file__).resolve().parent
 LIMITER = ROOT.parent / "agentgateway-ratelimit"
 
 
 def load(path):
+    import yaml
+
     return yaml.safe_load(path.read_text())
 
 
@@ -94,6 +98,8 @@ class MockLLM(http.server.BaseHTTPRequestHandler):
 class ForumPolicyTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        import yaml
+
         cls.temp = tempfile.TemporaryDirectory(prefix="forum-app-test-")
         cls.addClassCleanup(cls.temp.cleanup)
         cls.processes = {}
@@ -362,5 +368,134 @@ class ForumPolicyTests(unittest.TestCase):
             ).status == 200)
 
 
+def run_live(url, rate_limit):
+    if not url.startswith("https://"):
+        raise ValueError("Live tests require an HTTPS URL")
+    secret = json.loads(subprocess.check_output([
+        "kubectl", "-n", "agentgateway", "get", "secret",
+        "agentgateway-client-keys", "-o", "json",
+    ], text=True))
+    key = json.loads(base64.b64decode(secret["data"]["forum-app"]))["key"]
+    if not isinstance(key, str) or not key or any(c in key for c in "\r\n"):
+        raise ValueError("forum-app has an invalid client key")
+    # Equivalent to curl -k for this local development endpoint.
+    context = ssl._create_unverified_context()
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=context)
+    )
+    body = {"model": "gpt-6-luna", "input": "Reply with hello.",
+            "max_output_tokens": 64, "stream": False}
+    passed = failed = 0
+
+    def request(payload, auth=key, method="POST"):
+        headers = {"Content-Type": "application/json"}
+        if auth is not None:
+            headers["Authorization"] = "Bearer " + auth
+        req = urllib.request.Request(url, data=json.dumps(payload).encode(),
+                                     headers=headers, method=method)
+        try:
+            with opener.open(req, timeout=300) as response:
+                return response.status, response.read()
+        except urllib.error.HTTPError as error:
+            with error:
+                return error.code, error.read()
+
+    def check(label, expected, payload, auth=key, method="POST", guard=False):
+        nonlocal passed, failed
+        status, response = request(payload, auth, method)
+        success = status == expected
+        if guard:
+            success = success and response == b"Request blocked: sensitive data detected."
+        print(f"{'PASS' if success else 'FAIL'} {label}: "
+              f"HTTP {status} (expected {expected})", flush=True)
+        if success:
+            passed += 1
+        else:
+            failed += 1
+        # Never print potentially sensitive response bodies.
+        return status, response
+
+    def fresh_minute():
+        print("Waiting for the next UTC minute; pause other forum-app traffic.",
+              flush=True)
+        time.sleep(61 - time.time() % 60)
+
+    print(f"Testing {url} (TLS verification disabled).", flush=True)
+    print("Uses shared quotas and one real Copilot inference request.", flush=True)
+    fresh_minute()
+    check("Missing client key", 401, body, auth=None)
+    check("Invalid client key", 401, body, auth="invalid-test-key")
+    check("Non-POST method", 403, body, method="PUT")
+    patches = {
+        "Wrong model": {"model": "not-an-allowed-model"},
+        "Oversized cap": {"max_output_tokens": 2049},
+        "Zero cap": {"max_output_tokens": 0},
+        "Negative cap": {"max_output_tokens": -1},
+        "Fractional cap": {"max_output_tokens": 1.5},
+        "String cap": {"max_output_tokens": "64"},
+        "Boolean cap": {"max_output_tokens": True},
+        "Null cap": {"max_output_tokens": None},
+        "Alternate cap": {"max_tokens": 2049},
+        "Streaming": {"stream": True},
+        "Multiple completions": {"n": 2},
+    }
+    for label, patch in patches.items():
+        check(label, 403, body | patch)
+    missing = dict(body)
+    del missing["max_output_tokens"]
+    check("Missing cap", 403, missing)
+    check("Request above 1MiB", 413, body | {"input": "x" * 1048576})
+    if failed:
+        print("Stopping before quota-dependent checks because access checks failed.")
+        return 1
+
+    patterns = {
+        "Credit card": "4111 1111 1111 1111",
+        "SSN": "123-45-6789",
+        "GitHub token": "ghp_" + "a" * 30,
+        "GitHub PAT": "github_pat_" + "b" * 30,
+        "AWS key": "AKIA" + "A" * 16,
+        "Private key": "-----BEGIN PRIVATE KEY-----",
+    }
+    for label, content in patterns.items():
+        check("Sensitive input: " + label, 403, body | {"input": content}, guard=True)
+    check("Sensitive tool arguments", 403, body | {"input": [{
+        "type": "function_call", "call_id": "test-call", "name": "lookup",
+        "arguments": json.dumps({"key": patterns["Private key"]}),
+    }]}, guard=True)
+    status, response = check("Allowed request reaches Copilot", 200, body)
+    if status == 200:
+        result = json.loads(response)
+        if result.get("status") != "completed" or not result.get("output"):
+            print("FAIL expected a completed Responses result with output")
+            failed += 1
+
+    if rate_limit:
+        fresh_minute()
+        blocked = body | {"input": patterns["Private key"]}
+        for index in range(10):
+            check(f"Request quota slot {index + 1}/10", 403, blocked, guard=True)
+        check("Request quota exhausted", 429, blocked)
+        print("Shared request quota remains exhausted until the next minute.")
+    else:
+        print("SKIP request-quota exhaustion (enable with --rate-limit).")
+    print("SKIP live daily-budget exhaustion, response guards, and limiter outages;"
+          " run without --live for isolated checks.")
+    print(f"{passed} checks passed; {failed} failed.")
+    return int(failed != 0)
+
+
 if __name__ == "__main__":
-    unittest.main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--live", action="store_true", help="Test deployed HTTPS/Copilot")
+    parser.add_argument("--url", default="https://agentgateway.localhost:8443/v1/responses")
+    parser.add_argument("--rate-limit", action="store_true",
+                        help="Also exhaust the live request quota (requires --live)")
+    args, unittest_args = parser.parse_known_args()
+    if args.live:
+        if unittest_args:
+            parser.error("Unexpected live arguments: " + " ".join(unittest_args))
+        sys.exit(run_live(args.url, args.rate_limit))
+    if args.rate_limit or args.url != parser.get_default("url"):
+        parser.error("--rate-limit and --url require --live")
+    unittest.main(argv=[sys.argv[0], *unittest_args])
