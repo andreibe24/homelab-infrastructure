@@ -1,0 +1,22 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: agentgateway
+spec:
+  dependsOn:
+    - name: agentgateway-crds
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: agentgateway
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    fullnameOverride: agentgateway-controller
+    istio:
+      enabled: false

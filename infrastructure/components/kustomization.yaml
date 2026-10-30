@@ -19,3 +19,6 @@ resources:
   - ./reloader/reloader.ks.yaml
   - ./monitoring/monitoring.namespace.yaml
   - ./monitoring/monitoring.ks.yaml
+  - ./agentgateway/agentgateway.namespace.yaml
+  - ./agentgateway/agentgateway.ks.yaml
+  - ./agentgateway-config/agentgateway-config.ks.yaml

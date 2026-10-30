@@ -1,0 +1,20 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: agentgateway
+  namespace: agentgateway
+spec:
+  dependsOn:
+    - name: gateway
+      namespace: gateway
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  path: ./infrastructure/components/agentgateway
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: homelab-infrastructure
+    namespace: flux-system

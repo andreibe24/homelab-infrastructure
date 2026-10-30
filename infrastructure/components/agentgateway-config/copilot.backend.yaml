@@ -1,0 +1,18 @@
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: copilot
+spec:
+  ai:
+    provider:
+      copilot: {}
+  policies:
+    auth:
+      secretRef:
+        name: copilot-token
+    ai:
+      routes:
+        /v1/chat/completions: Completions
+        /v1/messages: Messages
+        /v1/responses: Responses

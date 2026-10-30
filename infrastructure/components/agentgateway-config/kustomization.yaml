@@ -1,0 +1,11 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agentgateway
+resources:
+  - ./agentgateway.parameters.yaml
+  - ./agentgateway-proxy.gateway.yaml
+  - ./copilot.backend.yaml
+  - ./copilot.httproute.yaml
+  - ./agentgateway-client-auth.policy.yaml
+  - ./agentgateway.httproute.yaml
