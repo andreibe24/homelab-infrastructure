@@ -7,7 +7,13 @@ from asgiref.sync import async_to_sync
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import Client, SimpleTestCase, TestCase, TransactionTestCase, override_settings
+from django.test import (
+    Client,
+    SimpleTestCase,
+    TestCase,
+    TransactionTestCase,
+    override_settings,
+)
 
 from .llm import GatewayError, generate
 from .management.commands.mcp_server import create_server
