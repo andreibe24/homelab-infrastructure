@@ -6,7 +6,7 @@ to this repository's Renovate workflow, and can be configured to dispatch
 another workflow in any repository the App installation can access.
 
 The standalone GitLab pipeline is at
-`external-workflow-dispatchers/.gitlab-ci.yml`.
+`docs/external-workflow-dispatchers/.gitlab-ci.yml`.
 
 ## GitHub App requirements
 
@@ -32,12 +32,12 @@ must match that workflow's declared `workflow_dispatch.inputs`.
 ## GitLab CI
 
 If your GitLab project is separate from this GitHub repository, copy
-`external-workflow-dispatchers/.gitlab-ci.yml` by itself to the GitLab project's
-root and name it `.gitlab-ci.yml`. It is standalone and does not need any other
-files from this repository. Files present only in GitHub are not automatically
-used by GitLab. If you use this whole repository as the GitLab project instead,
-set GitLab's CI/CD configuration file path to
-`external-workflow-dispatchers/.gitlab-ci.yml`.
+`docs/external-workflow-dispatchers/.gitlab-ci.yml` by itself to the GitLab
+project's root and name it `.gitlab-ci.yml`. It is standalone and does not need
+any other files from this repository. Files present only in GitHub are not
+automatically used by GitLab. If you use this whole repository as the GitLab
+project instead, set GitLab's CI/CD configuration file path to
+`docs/external-workflow-dispatchers/.gitlab-ci.yml`.
 
 In **Settings → CI/CD → General pipelines**, use `.gitlab-ci.yml` as the
 **CI/CD configuration file** in the separate-project setup (the default after
@@ -72,29 +72,65 @@ the defaults; for example, set `TARGET_WORKFLOW` to `build.yml` and
 
 ## Cloudflare Worker
 
-From the repository root, edit the `TARGET_*` values in
-`cloudflare/wrangler.jsonc`, then deploy with Wrangler:
+The Worker and Wrangler config are in
+`docs/external-workflow-dispatchers/cloudflare/`. Edit the `TARGET_*` values in
+`wrangler.jsonc` if needed, then deploy from that directory:
 
 ```sh
-cd external-workflow-dispatchers/cloudflare
+cd docs/external-workflow-dispatchers/cloudflare
+npx wrangler login
+npx wrangler deploy
 npx wrangler secret put GITHUB_APP_ID
 npx wrangler secret put GITHUB_INSTALLATION_ID
 npx wrangler secret put GITHUB_APP_PRIVATE_KEY
-npx wrangler deploy
 ```
 
-Enter the App ID and installation ID as the first two secret values, and paste
-the full PEM private key for the third. The Worker accepts both PKCS#1 and
-PKCS#8 PEM private keys. `TARGET_*` values are non-secret Wrangler vars; redeploy
-after changing them.
+Wrangler will open a browser to authorize deployment to your Cloudflare account.
+For each `secret put` command, enter the corresponding App ID, installation ID,
+or full PEM private key when prompted. The Worker accepts both PKCS#1 and PKCS#8
+PEM private keys. These GitHub credentials are Worker secrets, not a connection
+between Cloudflare and your GitHub account. `TARGET_*` values are non-secret
+Wrangler vars; redeploy after changing them.
 
 `wrangler.jsonc` configures the Cloudflare Cron Trigger for
-`43 1-23/2 * * *`. Cloudflare cron schedules use **UTC**, so this does not
-track Bucharest local time through daylight-saving changes.
+`43 1-23/2 * * *`. Cloudflare cron schedules use **UTC**.
+
+### Trigger locally for a test
+
+Local Wrangler does not automatically load the secrets configured on the
+deployed Cloudflare Worker. In the Cloudflare directory, create a temporary
+`.dev.vars` file with the same three credentials:
+
+```dotenv
+GITHUB_APP_ID="your-app-id"
+GITHUB_INSTALLATION_ID="your-installation-id"
+GITHUB_APP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+paste the full private key here
+-----END PRIVATE KEY-----"
+```
+
+Start the local Worker from `docs/external-workflow-dispatchers/cloudflare/`:
+
+```sh
+npx wrangler dev --test-scheduled
+```
+
+In another terminal, send a request to Wrangler's local scheduled-event
+endpoint:
+
+```sh
+curl -X POST 'http://localhost:8787/__scheduled?cron=43+1-23%2F2+*+*+*'
+```
+
+This executes the scheduled handler with the local variables and makes a real
+GitHub API call, so it starts a real workflow run in the configured target
+repository. Check the Wrangler terminal and the target repository's **Actions**
+tab. Delete `.dev.vars` after testing. A Snap `curl` sandbox notice is unrelated
+if the request reaches the local Worker.
 
 ## Avoiding duplicate runs
 
 The schedules are intentionally staggered: GitHub Actions at minute 13,
 GitLab at minute 33, and Cloudflare at minute 43 of every other odd-numbered
-hour. GitHub Actions uses Bucharest time; Cloudflare uses UTC. Each dispatcher
-only starts the GitHub Actions workflow and does not run it directly.
+hour on UTC timezone.
+Each dispatcher only starts the GitHub Actions workflow and does not run it directly.
