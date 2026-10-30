@@ -1,0 +1,39 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agentgateway-ratelimit
+spec:
+  podSelector:
+    matchLabels:
+      app: agentgateway-ratelimit
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only the managed proxy in this namespace may call the limiter's gRPC API.
+    - from:
+        - podSelector:
+            matchLabels:
+              gateway.networking.k8s.io/gateway-name: agentgateway-proxy
+      ports:
+        - port: 8081
+          protocol: TCP
+  egress:
+    # The limiter needs only its Redis counter store and cluster DNS.
+    - to:
+        - podSelector:
+            matchLabels:
+              app: agentgateway-ratelimit-redis
+      ports:
+        - port: 6379
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

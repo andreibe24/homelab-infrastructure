@@ -1,0 +1,10 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: agentgateway
+spec:
+  interval: 1h
+  url: oci://cr.agentgateway.dev/charts/agentgateway
+  ref:
+    tag: v1.7.0

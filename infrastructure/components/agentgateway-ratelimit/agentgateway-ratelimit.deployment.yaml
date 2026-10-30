@@ -1,0 +1,79 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentgateway-ratelimit
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agentgateway-ratelimit
+  template:
+    metadata:
+      labels:
+        app: agentgateway-ratelimit
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: ratelimit
+          image: envoyproxy/ratelimit:5ae0682e@sha256:b95206e32b1a5f824fb06062fbb85bbdfb7f5de54135e92afe8462f22c979681
+          command:
+            - /bin/ratelimit
+          env:
+            - name: REDIS_SOCKET_TYPE
+              value: tcp
+            - name: REDIS_URL
+              value: agentgateway-ratelimit-redis:6379
+            - name: RUNTIME_ROOT
+              value: /data
+            - name: RUNTIME_SUBDIRECTORY
+              value: ratelimit
+            - name: RUNTIME_WATCH_ROOT
+              value: "false"
+            - name: USE_STATSD
+              value: "false"
+            - name: HEALTHY_WITH_AT_LEAST_ONE_CONFIG_LOADED
+              value: "true"
+          ports:
+            - name: grpc
+              containerPort: 8081
+            - name: health
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: health
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: health
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: health
+            failureThreshold: 60
+            periodSeconds: 2
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /data/ratelimit/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: agentgateway-ratelimit

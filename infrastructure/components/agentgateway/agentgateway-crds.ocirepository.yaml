@@ -1,0 +1,10 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: agentgateway-crds
+spec:
+  interval: 1h
+  url: oci://cr.agentgateway.dev/charts/agentgateway-crds
+  ref:
+    tag: v1.7.0

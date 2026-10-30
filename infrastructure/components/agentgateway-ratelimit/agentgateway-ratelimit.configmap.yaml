@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agentgateway-ratelimit
+data:
+  # Domain and descriptor keys/values must match agentgateway-client-auth.policy.yaml.
+  # forum-app shares 10 requests/minute and 100000 input/output tokens/day across proxies.
+  # Token accounting happens after responses and can overshoot with in-flight requests.
+  # Adding a client requires both explicit authorization and matching quota descriptors.
+  config.yaml: |
+    domain: agentgateway
+    descriptors:
+      - key: client_requests
+        value: forum-app
+        rate_limit:
+          unit: minute
+          requests_per_unit: 10
+      - key: client_tokens
+        value: forum-app
+        rate_limit:
+          unit: day
+          requests_per_unit: 100000
