@@ -6,21 +6,17 @@ on:
     paths:
       - src/webapp-django-vite/**
       - .github/workflows/docker-build-push.yaml
-  release:
-    types: [published]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Published release tag, for example v1.2.3
-        required: true
-        type: string
+  push:
+    branches: [main]
+    paths:
+      - src/webapp-django-vite/**
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: forum-images-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'release' }}
+  group: forum-images-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'stable' }}
   cancel-in-progress: false
 
 jobs:
@@ -29,46 +25,60 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     steps:
+      - name: Checkout triggering revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Select image tags
         id: tags
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          DISPATCH_TAG: ${{ inputs.tag }}
         with:
           script: |
             if (context.eventName === "pull_request") {
               core.setOutput("value", `pr-${context.payload.pull_request.number}`);
-              core.setOutput("ref", context.sha);
               return;
             }
 
-            const tag = context.eventName === "release"
-              ? context.payload.release.tag_name
-              : process.env.DISPATCH_TAG;
-            const match = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(tag ?? "");
-            if (!match) {
-              core.setFailed(`Release tag must be semantic version X.Y.Z or vX.Y.Z; received "${tag}".`);
+            const { execFileSync } = require("node:child_process");
+            const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
+            const prefix = "webapp-django-vite-";
+            const pattern = /^webapp-django-vite-(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+            const tags = git("tag", "--merged", context.sha, "--sort=-version:refname")
+              .split("\n").filter(tag => pattern.test(tag));
+            const latest = tags[0];
+            if (latest && git("rev-list", "-n", "1", latest) === context.sha) {
+              core.setOutput("value", latest);
               return;
             }
-            const version = `${match[1]}.${match[2]}.${match[3]}`;
-            const { data: release } = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag,
-            });
-            if (release.draft || release.prerelease) {
-              core.setFailed("Only published stable releases can publish release images.");
-              return;
-            }
-            core.setOutput("value", version);
-            core.setOutput("ref", `refs/tags/${tag}`);
 
-      - name: Checkout selected revision
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ steps.tags.outputs.ref }}
-          persist-credentials: false
+            // Migrate from the existing numeric 1.0.0 images without downgrading.
+            const version = latest
+              ? pattern.exec(latest).slice(1).map(Number)
+              : [1, 0, 0];
+            const legacy = git("tag", "--merged", context.sha, "--list", "v1.0.0");
+            const baseline = latest || legacy;
+            const range = baseline ? `${baseline}..${context.sha}` : context.sha;
+            const commits = git("log", "--format=%B%x00", range, "--", "src/webapp-django-vite/")
+              .split("\0").map(message => message.trim()).filter(Boolean);
+            const breaking = commits.some(message =>
+              /^[a-z]+(?:\([^)]+\))?!: /m.test(message) ||
+              /^BREAKING[ -]CHANGE: /m.test(message));
+            const feature = commits.some(message => /^feat(?:\([^)]+\))?: /m.test(message));
+            if (breaking) {
+              version[0] += 1; version[1] = 0; version[2] = 0;
+            } else if (feature) {
+              version[1] += 1; version[2] = 0;
+            } else {
+              version[2] += 1;
+            }
+            core.setOutput("value", `${prefix}${version.join(".")}`);
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -96,3 +106,30 @@ jobs:
         env:
           TAGS: ${{ steps.tags.outputs.value }}
           REGISTRY: ghcr.io/${{ github.repository }}
+
+      - name: Create app release after publishing images
+        if: github.event_name == 'push'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          RELEASE_TAG: ${{ steps.tags.outputs.value }}
+        with:
+          script: |
+            const tag = process.env.RELEASE_TAG;
+            try {
+              await github.rest.repos.getReleaseByTag({
+                ...context.repo,
+                tag,
+              });
+              return;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            await github.rest.repos.createRelease({
+              ...context.repo,
+              tag_name: tag,
+              target_commitish: context.sha,
+              name: tag,
+              body: `Images published with tag \`${tag}\` from commit ${context.sha}.`,
+              draft: false,
+              prerelease: false,
+            });

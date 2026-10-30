@@ -109,7 +109,7 @@ tool discovery/execution without spending real inference quota.
 ## Containers and Kubernetes
 
 From this directory, `docker buildx bake` builds backend/frontend images for
-amd64 and arm64. Set `TAGS=1.2.3` and `REGISTRY` to override defaults.
+amd64 and arm64. Set `TAGS=webapp-django-vite-1.2.3` and `REGISTRY` to override defaults.
 The backend runs migrations on startup and serves collected Django admin static
 files through WhiteNoise. nginx serves the frontend and proxies the Django API,
 admin, and static paths.
@@ -123,12 +123,29 @@ Flux waits for the database operator and gateway configuration.
 Startup/readiness/liveness probes explicitly send an allowed Host header.
 
 The image workflow builds same-repository PR previews tagged `pr-N`.
-Releases publish only `X.Y.Z` from the **release tag's revision**, including
-manual dispatches. No `dev`, `dev-X.Y.Z`, or `latest` aliases are published.
-PR titles follow Conventional Commits; the release workflow tags the merged
-commit and explicitly dispatches image publishing because releases created with
-`GITHUB_TOKEN` do not trigger another workflow automatically.
+When a push to `main` changes `src/webapp-django-vite/**`, the same workflow automatically builds
+both images and then creates a GitHub Release and Git tag. All three use
+`webapp-django-vite-X.Y.Z`; no manual tag push or separate release workflow is
+needed. No `dev`, `dev-X.Y.Z`, or `latest` aliases are published.
 
-The manifests currently use the legacy `dev` tag. Select a published `X.Y.Z`
-release or `pr-N` preview for both deployment images in Git to deploy it.
+Versions are calculated from commits touching `src/webapp-django-vite/` since the previous app
+tag: Conventional Commit `!` or `BREAKING CHANGE:` bumps major, `feat:` bumps
+minor, and all other source changes bump patch. Use Conventional Commit titles
+when squash-merging PRs. Changes outside this app do not create releases.
+The initial baseline is `1.0.0`, using legacy `v1.0.0` as the history boundary
+when present. Subsequent versions use only the app-prefixed tags. A rerun of an
+already released commit reuses its version. Images are published before the
+release is created, so no chained workflow trigger is needed.
+
+The deployment images retain the published numeric `1.0.0` baseline until
+Renovate upgrades them. Its versioning rule understands both legacy numeric
+tags and the new prefix, but only accepts new `webapp-django-vite-X.Y.Z` tags.
+On its next run after publication, Renovate can propose a grouped
+backend/frontend update, ignoring `pr-N` previews. Existing
+repository rules allow minor/patch automerge but require review for major updates.
+Flux rolls out the new images after that Renovate PR merges, not merely when
+the image tags appear.
+
+To test a PR, temporarily select its `pr-N` tag for both deployments in Git.
+Return to an app-prefixed stable tag afterward so Renovate can track upgrades.
 Make both GHCR packages public, or provide an image pull secret.
