@@ -52,9 +52,9 @@ spec:
                   name: chat-db-app
                   key: password
             - name: ALLOWED_HOSTS
-              value: chat.localhost
+              value: campfire.localhost
             - name: CSRF_TRUSTED_ORIGINS
-              value: https://chat.localhost
+              value: https://campfire.localhost
             - name: AGENTGATEWAY_BASE_URL
               value: http://agentgateway-proxy.agentgateway.svc.cluster.local:4000/v1
             - name: AGENTGATEWAY_CLIENT_CREDENTIALS
@@ -68,7 +68,7 @@ spec:
               port: 8000
               httpHeaders:
                 - name: Host
-                  value: chat.localhost
+                  value: campfire.localhost
             failureThreshold: 30
             periodSeconds: 10
           readinessProbe:
@@ -77,7 +77,7 @@ spec:
               port: 8000
               httpHeaders:
                 - name: Host
-                  value: chat.localhost
+                  value: campfire.localhost
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
@@ -86,7 +86,7 @@ spec:
               port: 8000
               httpHeaders:
                 - name: Host
-                  value: chat.localhost
+                  value: campfire.localhost
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:

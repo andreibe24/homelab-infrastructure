@@ -114,7 +114,7 @@ The backend runs migrations on startup and serves collected Django admin static
 files through WhiteNoise. nginx serves the frontend and proxies the Django API,
 admin, and static paths.
 
-`apps/webapp-django-vite` deploys the app at `https://chat.localhost`, with a
+`apps/webapp-django-vite` deploys the app at `https://campfire.localhost`, with a
 CloudNativePG database and the SOPS-managed Django signing key. Reflector copies
 the existing `agentgateway-client-keys` Secret into the app namespace; the
 backend reads only its `forum-app` JSON entry. The source Secret's reflector

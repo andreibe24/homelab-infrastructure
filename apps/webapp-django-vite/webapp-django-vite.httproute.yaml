@@ -9,7 +9,7 @@ spec:
       namespace: gateway
       sectionName: https-wildcard
   hostnames:
-    - chat.localhost
+    - campfire.localhost
   rules:
     - backendRefs:
         - name: webapp-django-vite-frontend
