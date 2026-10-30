@@ -71,7 +71,10 @@ spec:
                 - ALL
           volumeMounts:
             - name: config
-              mountPath: /data/ratelimit/config
+              # Directory projections make the runtime loader read the same domain twice.
+              # subPath updates require the ConfigMap-triggered Reloader restart above.
+              mountPath: /data/ratelimit/config/config.yaml
+              subPath: config.yaml
               readOnly: true
       volumes:
         - name: config

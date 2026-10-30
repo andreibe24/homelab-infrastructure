@@ -124,17 +124,24 @@ class ForumPolicyTests(unittest.TestCase):
 
         config_dir = directory / "config"
         config_dir.mkdir()
-        (config_dir / "config.yaml").write_text(
+        # Reproduce Kubernetes' ConfigMap projection, including its hidden symlinks.
+        revision = config_dir / "..2026_test"
+        revision.mkdir()
+        (revision / "config.yaml").write_text(
             load(LIMITER / "agentgateway-ratelimit.configmap.yaml")["data"]["config.yaml"]
         )
+        (config_dir / "..data").symlink_to(revision.name)
+        (config_dir / "config.yaml").symlink_to("..data/config.yaml")
         deployment = load(LIMITER / "agentgateway-ratelimit.deployment.yaml")
         container = deployment["spec"]["template"]["spec"]["containers"][0]
+        mount = next(item for item in container["volumeMounts"] if item["name"] == "config")
+        source = (config_dir / mount["subPath"]).resolve() if "subPath" in mount else config_dir
         env = {item["name"]: item["value"] for item in container["env"]}
         env.update(REDIS_URL=f"127.0.0.1:{cls.redis_port}",
                    GRPC_PORT=str(cls.limit_port), PORT=str(cls.http_port),
                    DEBUG_PORT=str(free_port()))
         args = ["--user", "65532", "--read-only", "--cap-drop", "ALL",
-                "-v", f"{config_dir}:/data/ratelimit/config:ro"]
+                "-v", f"{source}:{mount['mountPath']}:ro"]
         for key, value in env.items():
             args.extend(["-e", f"{key}={value}"])
         cls.limiter_args = [*args, container["image"]]
