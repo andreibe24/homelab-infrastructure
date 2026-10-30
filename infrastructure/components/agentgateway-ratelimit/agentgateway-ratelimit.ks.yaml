@@ -19,8 +19,8 @@ spec:
   healthCheckExprs:
     - apiVersion: dragonflydb.io/v1alpha1
       kind: Dragonfly
-      inProgress: "!has(status) || !has(status.phase) || status.phase != 'Ready'"
-      current: "has(status) && has(status.phase) && status.phase == 'Ready'"
+      inProgress: "!has(status.phase) || status.phase != 'Ready'"
+      current: "has(status.phase) && status.phase == 'Ready'"
   sourceRef:
     kind: GitRepository
     name: homelab-infrastructure
