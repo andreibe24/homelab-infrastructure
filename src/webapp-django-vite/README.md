@@ -145,6 +145,13 @@ repository rules allow minor/patch automerge but require review for major update
 Flux rolls out the new images after that Renovate PR merges, not merely when
 the image tags appear.
 
+Renovate also updates the app's own dependencies: `requirements*.txt`,
+`frontend/package.json` and its lockfile, and the Dockerfile base images.  Updates are
+grouped into one backend PR (Python packages, backend base image, CI Python) and
+one frontend PR (npm packages, frontend base images, CI Node.js), so the
+Dockerfiles and `lint-src.yaml` stay on the same runtime. Major updates get a
+separate `major-` PR for review. Merged dependency PRs release a new patch version.
+
 To test a PR, temporarily select its `pr-N` tag for both deployments in Git.
 Return to a stable `X.Y.Z` tag afterward so Renovate can track upgrades.
 Make both GHCR packages public, or provide an image pull secret.

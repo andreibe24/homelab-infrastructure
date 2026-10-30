@@ -7,7 +7,16 @@
   "major": {
     "automerge": false
   },
-  "enabledManagers": ["flux", "github-actions", "kubernetes", "mise", "custom.regex"],
+  "enabledManagers": [
+    "flux",
+    "github-actions",
+    "kubernetes",
+    "mise",
+    "custom.regex",
+    "pip_requirements",
+    "npm",
+    "dockerfile"
+  ],
   "flux": {
     "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.ya?ml$/"]
   },
@@ -24,6 +33,34 @@
       ],
       "groupName": "forum app images",
       "allowedVersions": "/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/"
+    },
+    {
+      "description": "Group forum backend dependencies, its base image and the CI Python version",
+      "matchFileNames": [
+        "src/webapp-django-vite/backend/**",
+        "src/webapp-django-vite/Dockerfile.backend"
+      ],
+      "groupName": "forum backend dependencies"
+    },
+    {
+      "description": "CI Python must move with the backend base image",
+      "matchFileNames": [".github/workflows/lint-src.yaml"],
+      "matchDepNames": ["python"],
+      "groupName": "forum backend dependencies"
+    },
+    {
+      "description": "Group forum frontend dependencies, its base images and the CI Node.js version",
+      "matchFileNames": [
+        "src/webapp-django-vite/frontend/**",
+        "src/webapp-django-vite/Dockerfile.frontend"
+      ],
+      "groupName": "forum frontend dependencies"
+    },
+    {
+      "description": "CI Node.js must move with the frontend build image",
+      "matchFileNames": [".github/workflows/lint-src.yaml"],
+      "matchDepNames": ["node"],
+      "groupName": "forum frontend dependencies"
     }
   ],
   "customManagers": [
