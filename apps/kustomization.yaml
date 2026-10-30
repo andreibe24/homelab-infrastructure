@@ -6,3 +6,5 @@ resources:
   - ./whoami/whoami.ks.yaml
   - ./sample-http3/sample-http3.namespace.yaml
   - ./sample-http3/sample-http3.ks.yaml
+  - ./webapp-django-vite/webapp-django-vite.namespace.yaml
+  - ./webapp-django-vite/webapp-django-vite.ks.yaml

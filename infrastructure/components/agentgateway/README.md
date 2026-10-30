@@ -293,14 +293,23 @@ possible. Emails and phone numbers are not blocked by these rules.
 Request bodies are buffered up to 1MiB; larger bodies are rejected with 413.
 
 The separate `../agentgateway-ratelimit/` component runs the Envoy rate-limit
-service and Redis. Redis uses a 1Gi persistent volume from the cluster's default
-StorageClass, append-only persistence with synchronous fsync, and no key eviction.
+service and an operator-managed Dragonfly instance using the Redis protocol.
+Dragonfly uses a 1Gi persistent volume from the cluster's default StorageClass,
+snapshots every minute, and no cache-mode eviction. This is not Redis AOF:
+an abrupt restart can lose updates since the last successful snapshot.
 A default provisioner or a matching pre-provisioned PV is required. NetworkPolicies
-restrict access to the proxy -> limiter -> Redis chain. Both services stay
+restrict access to the proxy -> limiter -> Dragonfly chain, with Dragonfly's
+admin port accessible only to the operator in `redis-operator`. Both services stay
 internal and run without root privileges or Kubernetes API credentials.
 This is a single-instance homelab deployment, not a highly available quota store.
 Rate-limit service errors fail closed, blocking requests rather than bypassing
-limits. Losing the Redis volume loses the counters.
+limits. Losing the Dragonfly volume loses the counters.
+
+The Redis-to-Dragonfly cutover intentionally starts fresh minute/day counters.
+Flux removes the old Redis StatefulSet and Service; its retained PVC is not
+reused or deleted by this configuration. Expect requests to fail closed while
+the new store starts and the limiter reconnects. Remove the old PVC manually
+only after confirming the new store is healthy. This change does not migrate data.
 
 Limits return 429 when exhausted. Token usage is charged after a response, so
 in-flight requests can overshoot the budget; this is not a hard billing ceiling.
@@ -321,9 +330,10 @@ python3 infrastructure/components/agentgateway-config/forum-app.test.py -v
 ```
 
 These checks translate the CRD rules to the proxy's standalone format and exercise
-them against real proxy, rate-limit, and Redis containers with a mock LLM and fake
+them against real proxy, rate-limit, and Dragonfly containers with a mock LLM and fake
 keys. They cover endpoint/output restrictions, sensitive-data checks, shared
-quotas, Redis restart persistence, and fail-closed behavior. They do not verify
+quotas, recovery from a completed Dragonfly snapshot, and fail-closed behavior.
+They do not verify
 Kubernetes reconciliation, NetworkPolicy enforcement, or Copilot credentials.
 
 ## Add another client

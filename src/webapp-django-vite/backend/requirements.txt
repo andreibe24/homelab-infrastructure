@@ -1,0 +1,5 @@
+Django==5.2.17
+gunicorn==23.0.0
+psycopg[binary]==3.2.10
+mcp==1.26.0
+whitenoise==6.11.0

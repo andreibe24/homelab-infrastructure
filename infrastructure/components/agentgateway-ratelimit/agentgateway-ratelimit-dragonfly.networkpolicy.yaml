@@ -1,0 +1,34 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agentgateway-ratelimit-dragonfly
+spec:
+  podSelector:
+    matchLabels:
+      app: agentgateway-ratelimit-dragonfly
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only the limiter can use the Redis-compatible data port.
+    - from:
+        - podSelector:
+            matchLabels:
+              app: agentgateway-ratelimit
+      ports:
+        - port: 6379
+          protocol: TCP
+    # The operator needs the separate admin port to configure the master.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: redis-operator
+          podSelector:
+            matchLabels:
+              control-plane: controller-manager
+      ports:
+        - port: 9999
+          protocol: TCP
+  # Single-replica Dragonfly initiates no network connections.
+  egress: []

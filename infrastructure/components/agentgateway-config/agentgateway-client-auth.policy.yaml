@@ -49,7 +49,7 @@ spec:
               has(json(request.body).max_tokens)))
     rateLimit:
       global:
-        # Shared Redis-backed counters prevent each proxy replica having its own quota.
+        # Shared Dragonfly-backed counters prevent each proxy replica having its own quota.
         backendRef:
           kind: Service
           name: agentgateway-ratelimit

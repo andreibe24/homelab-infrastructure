@@ -1,0 +1,46 @@
+name: Lint Kubernetes and Actions
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - apps/**
+      - clusters/**
+      - infrastructure/**
+      - .github/workflows/**
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Kubernetes and Actions linters
+        run: |
+          mkdir -p "${RUNNER_TEMP}/bin"
+          GOBIN="${RUNNER_TEMP}/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          GOBIN="${RUNNER_TEMP}/bin" go install github.com/yannh/kubeconform/cmd/kubeconform@v0.8.0
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+
+      - name: Lint GitHub Actions
+        run: actionlint .github/workflows/*.yaml
+
+      - name: Validate Kubernetes manifests
+        run: |
+          while IFS= read -r manifest; do
+            kubectl kustomize "$(dirname "$manifest")" > /dev/null
+          done < <(find apps infrastructure/components clusters -name kustomization.yaml -type f)
+
+          find apps infrastructure/components clusters -type f \
+            \( -name '*.yaml' -o -name '*.yml' \) \
+            ! -name kustomization.yaml ! -name '*.secret.yaml' -print0 |
+            xargs -0 kubeconform -strict -ignore-missing-schemas -summary
+
+          kubectl kustomize infrastructure/components/redis-operator |
+            kubeconform -strict -ignore-missing-schemas -summary

@@ -8,12 +8,19 @@ spec:
   dependsOn:
     - name: reloader
       namespace: reloader
+    - name: dragonfly-operator
+      namespace: redis-operator
   interval: 1h
   retryInterval: 1m
   timeout: 5m
   path: ./infrastructure/components/agentgateway-ratelimit
   prune: true
   wait: true
+  healthCheckExprs:
+    - apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
+      inProgress: "!has(status) || !has(status.phase) || status.phase != 'Ready'"
+      current: "has(status) && has(status.phase) && status.phase == 'Ready'"
   sourceRef:
     kind: GitRepository
     name: homelab-infrastructure

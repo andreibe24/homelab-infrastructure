@@ -1,0 +1,98 @@
+name: Build and push forum images
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - src/webapp-django-vite/**
+      - .github/workflows/docker-build-push.yaml
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release tag, for example v1.2.3
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: forum-images-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'release' }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Select image tags
+        id: tags
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
+        with:
+          script: |
+            if (context.eventName === "pull_request") {
+              core.setOutput("value", `pr-${context.payload.pull_request.number}`);
+              core.setOutput("ref", context.sha);
+              return;
+            }
+
+            const tag = context.eventName === "release"
+              ? context.payload.release.tag_name
+              : process.env.DISPATCH_TAG;
+            const match = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(tag ?? "");
+            if (!match) {
+              core.setFailed(`Release tag must be semantic version X.Y.Z or vX.Y.Z; received "${tag}".`);
+              return;
+            }
+            const version = `${match[1]}.${match[2]}.${match[3]}`;
+            const { data: release } = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag,
+            });
+            if (release.draft || release.prerelease) {
+              core.setFailed("Only published stable releases can publish release images.");
+              return;
+            }
+            core.setOutput("value", version);
+            core.setOutput("ref", `refs/tags/${tag}`);
+
+      - name: Checkout selected revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.tags.outputs.ref }}
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push images
+        uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
+        with:
+          source: ./src/webapp-django-vite
+          push: true
+          set: |
+            backend.cache-from=type=gha,scope=chat-backend
+            backend.cache-to=type=gha,mode=max,scope=chat-backend
+            frontend.cache-from=type=gha,scope=chat-frontend
+            frontend.cache-to=type=gha,mode=max,scope=chat-frontend
+        env:
+          TAGS: ${{ steps.tags.outputs.value }}
+          REGISTRY: ghcr.io/${{ github.repository }}

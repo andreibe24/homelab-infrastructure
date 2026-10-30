@@ -1,0 +1,97 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-django-vite-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp-django-vite-backend
+  template:
+    metadata:
+      labels:
+        app: webapp-django-vite-backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend:dev
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-django-vite
+                  key: django-secret-key
+            - name: DATABASE_NAME
+              value: chatdb
+            - name: DATABASE_HOST
+              value: chat-db-rw
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: chat-db-app
+                  key: username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: chat-db-app
+                  key: password
+            - name: ALLOWED_HOSTS
+              value: chat.localhost
+            - name: CSRF_TRUSTED_ORIGINS
+              value: https://chat.localhost
+            - name: AGENTGATEWAY_BASE_URL
+              value: http://agentgateway-proxy.agentgateway.svc.cluster.local:4000/v1
+            - name: AGENTGATEWAY_CLIENT_CREDENTIALS
+              valueFrom:
+                secretKeyRef:
+                  name: agentgateway-client-keys
+                  key: forum-app
+          startupProbe:
+            httpGet:
+              path: /api/health/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: chat.localhost
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: chat.localhost
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: chat.localhost
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi

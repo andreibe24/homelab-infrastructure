@@ -1,0 +1,26 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: webapp-django-vite
+  namespace: webapp-django-vite
+spec:
+  dependsOn:
+    - name: cloudnative-pg
+      namespace: postgres-operator
+    - name: agentgateway-config
+      namespace: agentgateway
+  interval: 1h
+  retryInterval: 1m
+  timeout: 10m
+  path: ./apps/webapp-django-vite
+  prune: true
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  sourceRef:
+    kind: GitRepository
+    name: homelab-infrastructure
+    namespace: flux-system

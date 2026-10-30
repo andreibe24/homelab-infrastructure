@@ -1,0 +1,42 @@
+---
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
+metadata:
+  name: agentgateway-ratelimit-dragonfly
+spec:
+  replicas: 1
+  image: docker.dragonflydb.io/dragonflydb/dragonfly:v2.0.2
+  imagePullPolicy: IfNotPresent
+  serviceAccountName: agentgateway-ratelimit-dragonfly
+  args:
+    - --maxmemory=256mb
+    - --cache_mode=false
+    - --proactor_threads=1
+  snapshot:
+    cron: "* * * * *"
+    persistentVolumeClaimSpec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi

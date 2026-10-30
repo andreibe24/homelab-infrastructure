@@ -23,3 +23,7 @@ resources:
   - ./agentgateway/agentgateway.ks.yaml
   - ./agentgateway-ratelimit/agentgateway-ratelimit.ks.yaml
   - ./agentgateway-config/agentgateway-config.ks.yaml
+  - ./postgres-operator/postgres-operator.namespace.yaml
+  - ./postgres-operator/cloudnative-pg.kustomization.yaml
+  - ./redis-operator/redis-operator.namespace.yaml
+  - ./redis-operator/dragonfly-operator.kustomization.yaml

@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-django-vite-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp-django-vite-frontend
+  template:
+    metadata:
+      labels:
+        app: webapp-django-vite-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-frontend:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi

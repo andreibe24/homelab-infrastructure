@@ -25,7 +25,7 @@ spec:
             - name: REDIS_SOCKET_TYPE
               value: tcp
             - name: REDIS_URL
-              value: agentgateway-ratelimit-redis:6379
+              value: agentgateway-ratelimit-dragonfly:6379
             - name: RUNTIME_ROOT
               value: /data
             - name: RUNTIME_SUBDIRECTORY

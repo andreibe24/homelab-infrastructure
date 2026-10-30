@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="description" content="A shared forum built with Django, Vite, and MCP tools." />
+    <title>Campfire — forum &amp; tools</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="brand">
+        <span class="brand-mark" aria-hidden="true">✳</span>
+        <div>
+          <p class="eyebrow">Django + Vite + MCP</p>
+          <h1>Campfire</h1>
+        </div>
+      </header>
+
+      <section id="auth-panel" class="panel auth-panel" aria-labelledby="welcome-title">
+        <p class="eyebrow">The community channel</p>
+        <h2 id="welcome-title">Pull up a chair.</h2>
+        <p class="muted">Sign in or create an account to join the conversation.</p>
+        <form id="auth-form">
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" maxlength="150" required />
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+          <div class="button-row">
+            <button type="submit" name="mode" value="login">Sign in</button>
+            <button type="submit" name="mode" value="register" class="button-secondary">Create account</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="chat-panel" class="panel chat-panel" aria-labelledby="channel-title" hidden>
+        <header class="channel-header">
+          <div>
+            <p class="eyebrow">One room. Everyone welcome.</p>
+            <h2 id="channel-title">The lounge</h2>
+          </div>
+          <div class="user-controls">
+            <span id="current-user"></span>
+            <button id="logout-button" type="button" class="button-secondary">Sign out</button>
+          </div>
+        </header>
+        <div class="tabs" role="tablist" aria-label="Workspace">
+          <button id="forum-tab" type="button" role="tab" aria-selected="true" aria-controls="forum-view">Forum</button>
+          <button id="tools-tab" type="button" role="tab" aria-selected="false" aria-controls="tools-view" tabindex="-1">MCP tools</button>
+        </div>
+        <section id="forum-view" role="tabpanel" aria-labelledby="forum-tab">
+          <div class="forum-toolbar">
+            <p class="muted">Share an idea or catch up on the conversation.</p>
+            <button id="summarize-button" type="button" class="button-secondary">Summarize</button>
+          </div>
+          <aside id="forum-summary" class="summary" aria-label="AI conversation summary" hidden>
+            <p class="eyebrow">AI summary · review for accuracy</p>
+            <p id="summary-text"></p>
+          </aside>
+          <ol id="messages" class="messages" aria-label="Channel messages"></ol>
+          <form id="message-form" class="message-form">
+            <label class="visually-hidden" for="message-input">Write a message</label>
+            <textarea id="message-input" name="content" rows="2" maxlength="2000" placeholder="Say something kind…" required></textarea>
+            <button type="submit">Send</button>
+          </form>
+        </section>
+        <section id="tools-view" class="tools-view" role="tabpanel" aria-labelledby="tools-tab" hidden>
+          <h2>Forum toolkit</h2>
+          <p class="muted">Try the same tools available to an MCP client. Results stay private to this view; tools never post for you.</p>
+          <p class="tool-notice">AI tools send the latest 20 messages and your reply idea to the LLM through agentgateway. Avoid sensitive information. The shared quota is 10 requests/minute and 100,000 tokens/day.</p>
+          <label for="reply-idea">Your reply idea <span class="muted">(for Draft a reply)</span></label>
+          <textarea id="reply-idea" rows="3" maxlength="2000" placeholder="What would you like to say?"></textarea>
+          <div id="tool-list" class="tool-list"></div>
+          <section id="tool-result" class="tool-result" aria-labelledby="result-title" hidden>
+            <h3 id="result-title">Result</h3>
+            <p class="muted">AI-generated text may be inaccurate. Review before sharing.</p>
+            <pre id="tool-output"></pre>
+            <button id="use-draft-button" type="button" hidden>Use draft in forum</button>
+          </section>
+        </section>
+      </section>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <footer class="footer">A learning space for Django, Vite, and MCP. AI never posts automatically.</footer>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
