@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: webapp-django-vite
 resources:
   - webapp-django-vite.secret.yaml
-  - webapp-django-vite.cnpg-cluster.yaml
+  - chat-db.cluster.yaml
   - webapp-django-vite.backend-deployment.yaml
   - webapp-django-vite.backend-service.yaml
   - webapp-django-vite.frontend-deployment.yaml

@@ -20,11 +20,11 @@ spec:
         - port: 8081
           protocol: TCP
   egress:
-    # The limiter needs only its Redis counter store and cluster DNS.
+    # The limiter needs only its Dragonfly counter store and cluster DNS.
     - to:
         - podSelector:
             matchLabels:
-              app: agentgateway-ratelimit-redis
+              app: agentgateway-ratelimit-dragonfly
       ports:
         - port: 6379
           protocol: TCP

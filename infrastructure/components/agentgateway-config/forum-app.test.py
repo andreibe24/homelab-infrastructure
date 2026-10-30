@@ -115,16 +115,19 @@ class ForumPolicyTests(unittest.TestCase):
         cls.addClassCleanup(cls.server.shutdown)
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
 
-        cls.redis_spec = load(LIMITER / "agentgateway-ratelimit-redis.statefulset.yaml")
-        cls.redis_container = cls.redis_spec["spec"]["template"]["spec"]["containers"][0]
-        data = directory / "redis"
+        cls.store_spec = load(LIMITER / "agentgateway-ratelimit-dragonfly.dragonfly.yaml")["spec"]
+        data = directory / "dragonfly"
         data.mkdir(mode=0o777)
         data.chmod(0o777)
         cls.redis_args = [
-            "--user", "999:1000", "--read-only", "--cap-drop", "ALL",
-            "-v", f"{data}:/data", cls.redis_container["image"],
-            *cls.redis_container["args"], "--port", str(cls.redis_port),
+            "--user", "999:999", "--read-only", "--cap-drop", "ALL",
+            "-v", f"{data}:/data", cls.store_spec["image"],
+            *cls.store_spec["args"], "--dir=/data",
+            f"--snapshot_cron={cls.store_spec['snapshot']['cron']}",
+            "--port", str(cls.redis_port),
         ]
+        subprocess.run(["docker", "pull", "--quiet", cls.store_spec["image"]], check=True,
+                       stdout=subprocess.DEVNULL)
         cls.start("redis", cls.redis_args)
         cls.wait(lambda: cls.redis("ping") == "PONG")
 
@@ -225,9 +228,6 @@ class ForumPolicyTests(unittest.TestCase):
     @classmethod
     def stop(cls, role):
         name, proc, log = cls.processes.pop(role)
-        if role == "redis" and proc.poll() is None:
-            subprocess.run(["docker", "exec", name, "chmod", "-R", "a+rwX",
-                            "/data/appendonlydir"], check=True, capture_output=True)
         subprocess.run(["docker", "stop", "--time", "2", name], capture_output=True)
         proc.wait(timeout=15)
         log.close()
@@ -340,11 +340,12 @@ class ForumPolicyTests(unittest.TestCase):
         oversized = self.body | {"messages": [{"role": "user", "content": "x" * 1048576}]}
         self.assertEqual(self.request(oversized)[0], 413)
 
-    def test_token_budget_survives_redis_restart(self):
+    def test_token_budget_recovers_from_completed_dragonfly_snapshot(self):
         MockLLM.tokens = 60000
         self.assertEqual(self.request(self.body)[0], 200)
         self.assertEqual(self.request(self.body)[0], 200)
         self.assertEqual(self.request(self.body)[0], 429)
+        self.assertEqual(self.redis("save"), "OK")
         self.stop("redis")
         self.start("redis", self.redis_args)
         self.wait(lambda: self.redis("ping") == "PONG")
@@ -363,6 +364,18 @@ class ForumPolicyTests(unittest.TestCase):
             self.assertEqual(MockLLM.requests, [])
         finally:
             self.start("limiter", self.limiter_args)
+            self.wait(lambda: urllib.request.urlopen(
+                f"http://127.0.0.1:{self.http_port}/healthcheck", timeout=1
+            ).status == 200)
+
+    def test_unavailable_dragonfly_fails_closed(self):
+        self.stop("redis")
+        try:
+            self.assertEqual(self.request(self.body)[0], 500)
+            self.assertEqual(MockLLM.requests, [])
+        finally:
+            self.start("redis", self.redis_args)
+            self.wait(lambda: self.redis("ping") == "PONG")
             self.wait(lambda: urllib.request.urlopen(
                 f"http://127.0.0.1:{self.http_port}/healthcheck", timeout=1
             ).status == 200)

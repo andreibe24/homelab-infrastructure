@@ -7,6 +7,6 @@ resources:
   - ./agentgateway-ratelimit.deployment.yaml
   - ./agentgateway-ratelimit.service.yaml
   - ./agentgateway-ratelimit.networkpolicy.yaml
-  - ./agentgateway-ratelimit-redis.statefulset.yaml
-  - ./agentgateway-ratelimit-redis.service.yaml
-  - ./agentgateway-ratelimit-redis.networkpolicy.yaml
+  - ./agentgateway-ratelimit-dragonfly.dragonfly.yaml
+  - ./agentgateway-ratelimit-dragonfly.serviceaccount.yaml
+  - ./agentgateway-ratelimit-dragonfly.networkpolicy.yaml

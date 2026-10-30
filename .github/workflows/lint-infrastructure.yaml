@@ -42,5 +42,5 @@ jobs:
             ! -name kustomization.yaml ! -name '*.secret.yaml' -print0 |
             xargs -0 kubeconform -strict -ignore-missing-schemas -summary
 
-          kubectl kustomize infrastructure/components/dragonfly-operator |
+          kubectl kustomize infrastructure/components/redis-operator |
             kubeconform -strict -ignore-missing-schemas -summary
