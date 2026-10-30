@@ -25,7 +25,8 @@ spec:
       action: Require
       policy:
         matchExpressions:
-          # forum-app may POST only gpt-6-luna to the three supported endpoints.
+          # forum-app may POST only gpt-6-luna to these explicitly allowed endpoints.
+          # The current Copilot provider supports only /v1/responses.
           # Disable streaming so response guards inspect the full result before release.
           # Allow one completion and require the endpoint's output cap (1..2048).
           # Validate every supplied cap so alternate fields cannot bypass the ceiling.

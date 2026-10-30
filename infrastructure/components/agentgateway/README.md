@@ -45,28 +45,29 @@ Agentgateway does not
 perform interactive login, exchange credentials, or refresh expired tokens.
 Account entitlements, organization policies, quotas, and GitHub terms still apply.
 
-### Create a least-privilege Copilot PAT
+### Use a credential accepted by the direct Copilot API
 
-GitHub documents the following fine-grained PAT settings for Copilot authentication:
+The deployed endpoint rejects personal access tokens with
+`Personal Access Tokens are not supported for this endpoint`. A fine-grained PAT
+with **Copilot Requests: Read** is not usable here; adding repository permissions
+or switching to a broader PAT will not fix that rejection. Copilot CLI PAT
+authentication guidance does not establish support for this direct API.
 
-| Setting | Value |
-| --- | --- |
-| Token type | Fine-grained personal access token, not a classic PAT. |
-| Resource owner | Your personal account with an active Copilot license, not an organization. |
-| Account permissions | **Copilot Requests: Read**. |
-| Repository permissions | Do not add any; no Contents, Actions, or administration permissions are needed for inference. |
-| Expiration | A short, manageable lifetime; rotate the credential before it expires. |
+The [upstream Kubernetes example](https://github.com/agentgateway/agentgateway/tree/v1.7.0/examples/llm-copilot)
+requires the same credential as standalone Copilot, provisioned separately.
+Standalone authentication can read credentials written by Copilot editor sign-in
+or GitHub CLI OAuth login, but issuer, scopes, account entitlement, and endpoint
+compatibility still matter. A successful CLI login alone is not proof that its
+credential works with this endpoint.
 
-[Create a PAT with Copilot Requests preselected](https://github.com/settings/personal-access-tokens/new?user_copilot_requests=read).
-These settings are documented in
-[GitHub's Copilot authentication guidance](https://github.github.com/gh-aw/reference/auth/#copilot_github_token).
-That guidance covers Copilot CLI authentication, not a guarantee of compatibility
-with agentgateway's direct Copilot API integration. Compatibility still needs an
-end-to-end request through this deployment. Do not grant broader permissions if
-authentication fails.
+Use the tools' normal interactive sign-in flow, review the requested access, and
+confirm that the resulting credential is accepted by the direct API. Do not
+request broader permissions to bypass a token-type rejection. Agentgateway does
+not perform credential exchange or renewal for the Kubernetes Secret.
 
-Store the issued token only in `stringData.Authorization` using SOPS as described
-below. Never paste it into chat, shell arguments, or plaintext Git files.
+Store an accepted credential only in `stringData.Authorization` using SOPS as
+described below. Never paste it into chat, shell arguments, or plaintext Git files.
+Revoke the rejected PAT if it was created solely for this deployment.
 
 ### Store and rotate credentials
 
@@ -101,7 +102,9 @@ The Copilot backend forwards the requested model unchanged and does not grant
 access to models outside the account's entitlements. `forum-app` may request only
 `gpt-6-luna`; this model must also be available to the Copilot account.
 
-Supported endpoints are `/v1/chat/completions`, `/v1/messages`, and `/v1/responses`.
+Use `/v1/responses` with this Copilot backend. Although the route and policy also
+permit `/v1/chat/completions` and `/v1/messages`, the v1.7.0 Copilot provider accepts
+only OpenAI Responses format and rejects conversions from those other formats.
 Unlike the standalone LLM configuration, this setup does not expose a generated
 `/v1/models` catalog; configure model IDs explicitly in clients.
 
@@ -128,13 +131,14 @@ policies overwriting one another.
 
 | Control | forum-app setting |
 | --- | --- |
-| Model access | Only `gpt-6-luna`, via POST to the three supported endpoints. |
+| Model access | Only `gpt-6-luna`, via POST; use `/v1/responses` with Copilot. |
 | Request rate | 10 requests/minute, shared across proxy replicas. |
 | Token budget | 100,000 combined input/output tokens per UTC day, shared across replicas. |
 | Output size | A positive integer output limit of at most 2,048 is required; missing, invalid, or oversized limits are rejected with 403. Multiple completions (`n > 1`) are rejected. |
 | Sensitive-data checks | Reject credit card numbers, US SSNs, GitHub token patterns, AWS access-key IDs, and private-key headers in prompts, responses, and tool arguments. |
 
-Use the output-limit field appropriate to the endpoint:
+The policy validates these endpoint-specific output-limit fields; only the
+Responses endpoint is usable with the current Copilot provider:
 
 | Endpoint | Required field |
 | --- | --- |
