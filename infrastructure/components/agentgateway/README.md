@@ -40,10 +40,35 @@ to `agentgateway`; reflection is restricted to that namespace.
 Every entry in `agentgateway-client-keys` is an accepted client key. Never put the
 upstream Copilot credential in this Secret.
 
-A license alone is not a credential. Use an existing credential from an authorized
-Copilot login; do not assume an arbitrary GitHub PAT works. Agentgateway does not
+A license alone is not a credential; do not assume an arbitrary GitHub PAT works.
+Agentgateway does not
 perform interactive login, exchange credentials, or refresh expired tokens.
 Account entitlements, organization policies, quotas, and GitHub terms still apply.
+
+### Create a least-privilege Copilot PAT
+
+GitHub documents the following fine-grained PAT settings for Copilot authentication:
+
+| Setting | Value |
+| --- | --- |
+| Token type | Fine-grained personal access token, not a classic PAT. |
+| Resource owner | Your personal account with an active Copilot license, not an organization. |
+| Account permissions | **Copilot Requests: Read**. |
+| Repository permissions | Do not add any; no Contents, Actions, or administration permissions are needed for inference. |
+| Expiration | A short, manageable lifetime; rotate the credential before it expires. |
+
+[Create a PAT with Copilot Requests preselected](https://github.com/settings/personal-access-tokens/new?user_copilot_requests=read).
+These settings are documented in
+[GitHub's Copilot authentication guidance](https://github.github.com/gh-aw/reference/auth/#copilot_github_token).
+That guidance covers Copilot CLI authentication, not a guarantee of compatibility
+with agentgateway's direct Copilot API integration. Compatibility still needs an
+end-to-end request through this deployment. Do not grant broader permissions if
+authentication fails.
+
+Store the issued token only in `stringData.Authorization` using SOPS as described
+below. Never paste it into chat, shell arguments, or plaintext Git files.
+
+### Store and rotate credentials
 
 The Copilot token is an encrypted placeholder and must be replaced before use.
 The client key is randomly generated. With the age private key available to SOPS,
