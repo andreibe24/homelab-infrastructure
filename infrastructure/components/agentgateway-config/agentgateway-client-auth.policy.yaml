@@ -4,12 +4,112 @@ kind: AgentgatewayPolicy
 metadata:
   name: agentgateway-client-auth
 spec:
+  # Apply the same controls to every route served by the internal proxy.
   targetRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: agentgateway-proxy
   traffic:
+    # Authorization reads the JSON body; reject bodies above 1MiB rather than bypass checks.
+    buffer:
+      request:
+        maxBytes: 1048576
+        failureMode: FailClosed
     apiKeyAuthentication:
       mode: Strict
       secretRef:
+        # JSON Secret entries supply trusted apiKey.client_id metadata, not client headers.
         name: agentgateway-client-keys
+    authorization:
+      # Require every condition; newly authenticated client IDs are denied by default.
+      action: Require
+      policy:
+        matchExpressions:
+          # forum-app may POST only gpt-6-luna to the three supported endpoints.
+          # Disable streaming so response guards inspect the full result before release.
+          # Allow one completion and require the endpoint's output cap (1..2048).
+          # Validate every supplied cap so alternate fields cannot bypass the ceiling.
+          - >-
+            apiKey.client_id == "forum-app" &&
+            request.method == "POST" &&
+            json(request.body).model == "gpt-6-luna" &&
+            (!has(json(request.body).stream) || json(request.body).stream == false) &&
+            (!has(json(request.body).n) || json(request.body).n == 1) &&
+            ["max_tokens", "max_completion_tokens", "max_output_tokens"].all(field,
+              !(field in json(request.body)) ||
+              (json(request.body)[field] > 0 &&
+               json(request.body)[field] <= 2048 &&
+               int(json(request.body)[field]) == json(request.body)[field])) &&
+            ((request.path == "/v1/chat/completions" &&
+              has(json(request.body).max_completion_tokens)) ||
+             (request.path == "/v1/responses" &&
+              has(json(request.body).max_output_tokens)) ||
+             (request.path == "/v1/messages" &&
+              has(json(request.body).max_tokens)))
+    rateLimit:
+      global:
+        # Shared Redis-backed counters prevent each proxy replica having its own quota.
+        backendRef:
+          kind: Service
+          name: agentgateway-ratelimit
+          namespace: agentgateway
+          port: 8081
+        domain: agentgateway
+        # A limiter outage must block requests, not grant unlimited upstream access.
+        failureMode: FailClosed
+        descriptors:
+          # Names and authenticated IDs must match the limiter ConfigMap descriptors.
+          - entries:
+              - name: client_requests
+                expression: apiKey.client_id
+            unit: Requests
+          # Combined provider-reported input/output usage is charged after generation.
+          # Concurrent requests can overshoot the budget; this is not a billing ceiling.
+          - entries:
+              - name: client_tokens
+                expression: apiKey.client_id
+            unit: Tokens
+  backend:
+    ai:
+      promptGuard:
+        # Pattern checks are limited DLP, not moderation or prompt-injection protection.
+        request:
+          # Inspect system/user text and tool inputs/outputs before sending to Copilot.
+          - scope:
+              - SystemPrompt
+              - Messages
+              - ToolOutput
+              - ToolInput
+            regex:
+              action: Reject
+              builtins:
+                - CreditCard
+                - Ssn
+              matches:
+                # GitHub credentials, AWS access-key IDs, and private-key PEM headers.
+                - '\bgh[pousr]_[A-Za-z0-9]{20,}\b'
+                - '\bgithub_pat_[A-Za-z0-9_]{20,}\b'
+                - '\b(?:AKIA|ASIA)[A-Z0-9]{16}\b'
+                - '-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'
+            response:
+              statusCode: 403
+              message: "Request blocked: sensitive data detected."
+        response:
+          # Non-streaming output and generated tool arguments are checked before release.
+          - scope:
+              - Messages
+              - ToolInput
+            regex:
+              action: Reject
+              builtins:
+                - CreditCard
+                - Ssn
+              matches:
+                - '\bgh[pousr]_[A-Za-z0-9]{20,}\b'
+                - '\bgithub_pat_[A-Za-z0-9_]{20,}\b'
+                - '\b(?:AKIA|ASIA)[A-Z0-9]{16}\b'
+                - '-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'
+            response:
+              statusCode: 403
+              # Do not echo the matched sensitive content in the rejection.
+              message: "Response blocked: sensitive data detected."

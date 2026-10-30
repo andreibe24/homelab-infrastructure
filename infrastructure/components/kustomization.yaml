@@ -21,4 +21,5 @@ resources:
   - ./monitoring/monitoring.ks.yaml
   - ./agentgateway/agentgateway.namespace.yaml
   - ./agentgateway/agentgateway.ks.yaml
+  - ./agentgateway-ratelimit/agentgateway-ratelimit.ks.yaml
   - ./agentgateway-config/agentgateway-config.ks.yaml

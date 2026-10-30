@@ -1,0 +1,12 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: agentgateway
+resources:
+  - ./agentgateway-ratelimit.configmap.yaml
+  - ./agentgateway-ratelimit.deployment.yaml
+  - ./agentgateway-ratelimit.service.yaml
+  - ./agentgateway-ratelimit.networkpolicy.yaml
+  - ./agentgateway-ratelimit-redis.statefulset.yaml
+  - ./agentgateway-ratelimit-redis.service.yaml
+  - ./agentgateway-ratelimit-redis.networkpolicy.yaml
