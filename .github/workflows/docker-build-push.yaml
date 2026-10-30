@@ -54,7 +54,8 @@ jobs:
               .split("\n").filter(tag => pattern.test(tag));
             const latest = tags[0];
             if (latest && git("rev-list", "-n", "1", latest) === context.sha) {
-              core.setOutput("value", latest);
+              core.setOutput("value", latest.slice(prefix.length));
+              core.setOutput("release", latest);
               return;
             }
 
@@ -78,7 +79,8 @@ jobs:
             } else {
               version[2] += 1;
             }
-            core.setOutput("value", `${prefix}${version.join(".")}`);
+            core.setOutput("value", version.join("."));
+            core.setOutput("release", `${prefix}${version.join(".")}`);
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -111,7 +113,8 @@ jobs:
         if: github.event_name == 'push'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          RELEASE_TAG: ${{ steps.tags.outputs.value }}
+          RELEASE_TAG: ${{ steps.tags.outputs.release }}
+          IMAGE_TAG: ${{ steps.tags.outputs.value }}
         with:
           script: |
             const tag = process.env.RELEASE_TAG;
@@ -129,7 +132,7 @@ jobs:
               tag_name: tag,
               target_commitish: context.sha,
               name: tag,
-              body: `Images published with tag \`${tag}\` from commit ${context.sha}.`,
+              body: `Images published with tag \`${process.env.IMAGE_TAG}\` from commit ${context.sha}.`,
               draft: false,
               prerelease: false,
             });

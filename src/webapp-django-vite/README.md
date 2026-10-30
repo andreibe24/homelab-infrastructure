@@ -124,8 +124,8 @@ Startup/readiness/liveness probes explicitly send an allowed Host header.
 
 The image workflow builds same-repository PR previews tagged `pr-N`.
 When a push to `main` changes `src/webapp-django-vite/**`, the same workflow automatically builds
-both images and then creates a GitHub Release and Git tag. All three use
-`webapp-django-vite-X.Y.Z`; no manual tag push or separate release workflow is
+both images tagged `X.Y.Z`, then creates a GitHub Release and Git tag named
+`webapp-django-vite-X.Y.Z`. No manual tag push or separate release workflow is
 needed. No `dev`, `dev-X.Y.Z`, or `latest` aliases are published.
 
 Versions are calculated from commits touching `src/webapp-django-vite/` since the previous app
@@ -137,9 +137,8 @@ when present. Subsequent versions use only the app-prefixed tags. A rerun of an
 already released commit reuses its version. Images are published before the
 release is created, so no chained workflow trigger is needed.
 
-The deployment images retain the published numeric `1.0.0` baseline until
-Renovate upgrades them. Its versioning rule understands both legacy numeric
-tags and the new prefix, but only accepts new `webapp-django-vite-X.Y.Z` tags.
+The deployments start at the published `1.0.0` images. Renovate only accepts
+plain `X.Y.Z` image tags for them.
 On its next run after publication, Renovate can propose a grouped
 backend/frontend update, ignoring `pr-N` previews. Existing
 repository rules allow minor/patch automerge but require review for major updates.
@@ -147,5 +146,5 @@ Flux rolls out the new images after that Renovate PR merges, not merely when
 the image tags appear.
 
 To test a PR, temporarily select its `pr-N` tag for both deployments in Git.
-Return to an app-prefixed stable tag afterward so Renovate can track upgrades.
+Return to a stable `X.Y.Z` tag afterward so Renovate can track upgrades.
 Make both GHCR packages public, or provide an image pull secret.

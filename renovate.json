@@ -16,15 +16,14 @@
   },
   "packageRules": [
     {
-      "description": "Update forum images together using app-prefixed semver tags",
+      "description": "Update forum images together using plain X.Y.Z release image tags",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
         "ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend",
         "ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-frontend"
       ],
       "groupName": "forum app images",
-      "versioning": "regex:^(?:webapp-django-vite-)?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
-      "allowedVersions": "/^webapp-django-vite-(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/"
+      "allowedVersions": "/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/"
     }
   ],
   "customManagers": [
