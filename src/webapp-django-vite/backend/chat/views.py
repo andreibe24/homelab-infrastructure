@@ -91,7 +91,7 @@ def login_user(request):
         )
     username = data.get("username", "").strip() if data else ""
     password = data.get("password", "") if data else ""
-    user = authenticate(request, **{"username": username, "password": password})
+    user = authenticate(request, username=username, password=password)
     if user is None:
         return JsonResponse({"error": "Invalid username or password."}, status=401)
     login(request, user)
