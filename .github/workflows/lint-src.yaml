@@ -37,7 +37,9 @@ jobs:
           DJANGO_DEBUG: "true"
           DATABASE_ENGINE: django.db.backends.sqlite3
           DATABASE_NAME: ":memory:"
-        run: python manage.py test
+        run: |
+          python manage.py makemigrations --check --dry-run
+          python manage.py test
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

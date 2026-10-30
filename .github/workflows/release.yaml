@@ -97,7 +97,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: process.env.RELEASE_TAG,
-              target_commitish: "main",
+              target_commitish: context.payload.pull_request.merge_commit_sha,
               name: process.env.RELEASE_TAG,
               body: `Release from PR #${context.payload.pull_request.number}: ${context.payload.pull_request.title}\n\n<!-- chat-app-pr:${context.payload.pull_request.number} -->`,
               draft: false,

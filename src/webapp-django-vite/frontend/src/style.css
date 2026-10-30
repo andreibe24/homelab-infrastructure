@@ -1,5 +1,5 @@
 :root {
-  font-family: "DM Sans", sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #f8fafc;
   background: #0c111b;
   font-synthesis: none;
@@ -24,7 +24,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -61,7 +62,7 @@ p {
 
 h1,
 h2 {
-  font-family: Manrope, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 h1 {
@@ -112,7 +113,8 @@ form label {
   font-weight: 600;
 }
 
-input {
+input,
+textarea {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -122,7 +124,13 @@ input {
   background: #0f1723;
 }
 
-input:focus {
+textarea {
+  resize: vertical;
+  min-width: 0;
+}
+
+input:focus,
+textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgb(241 163 91 / 14%);
 }
@@ -151,6 +159,16 @@ button {
 
 button:hover {
   filter: brightness(1.08);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .button-secondary {
@@ -207,6 +225,15 @@ button:hover {
   margin-bottom: 7px;
 }
 
+.message-heading strong {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.message-heading time {
+  flex-shrink: 0;
+}
+
 .message-heading time {
   color: var(--muted);
   font-size: 11px;
@@ -230,6 +257,116 @@ button:hover {
   gap: 10px;
   border-top: 1px solid var(--line);
   padding: 18px 24px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px 0;
+}
+
+.tabs button {
+  color: var(--muted);
+  background: transparent;
+}
+
+.tabs [aria-selected="true"] {
+  color: var(--accent);
+  background: rgb(241 163 91 / 10%);
+}
+
+.forum-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 0;
+  font-size: 13px;
+}
+
+.summary,
+.tool-result {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  background: #0f1723;
+}
+
+.summary {
+  margin: 20px 24px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.tools-view {
+  padding: 24px;
+}
+
+.tools-view > .muted {
+  margin-top: 8px;
+}
+
+.tool-notice {
+  margin: 20px 0;
+  border-left: 2px solid var(--accent);
+  padding-left: 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.tools-view label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.tool-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.tool-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.tool-card button {
+  width: 100%;
+  padding: 8px;
+}
+
+.tool-card p {
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.tool-card code {
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.tool-result h3 {
+  margin: 0 0 8px;
+}
+
+.tool-result pre {
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+
+.footer {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
 }
 
 .status {
@@ -273,5 +410,12 @@ button:hover {
 
   .message-form {
     padding: 16px;
+  }
+
+  .message-heading,
+  .forum-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }

@@ -3,5 +3,10 @@
 __pycache__
 *.py[cod]
 *.sqlite3
+.env
+.env.*
+!.env.example
+**/.ruff_cache
+**/staticfiles
 frontend/node_modules
 frontend/dist

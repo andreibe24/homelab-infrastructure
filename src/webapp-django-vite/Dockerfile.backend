@@ -6,10 +6,11 @@ WORKDIR /app
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
-    && groupadd --system django \
-    && useradd --system --gid django --home-dir /app django
+    && groupadd --gid 10001 django \
+    && useradd --uid 10001 --gid django --home-dir /app --no-create-home django
 
 COPY --chown=django:django backend/ .
+RUN DJANGO_SECRET_KEY=build-only-static-assets python manage.py collectstatic --noinput
 USER django
 EXPOSE 8000
-CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --access-logfile -"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60 --access-logfile -"]

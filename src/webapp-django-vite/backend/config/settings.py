@@ -28,6 +28,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -88,6 +89,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
@@ -95,3 +97,9 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 DATA_UPLOAD_MAX_MEMORY_SIZE = 65536
+
+AGENTGATEWAY_BASE_URL = os.environ.get(
+    "AGENTGATEWAY_BASE_URL", "http://agentgateway-proxy.agentgateway.svc.cluster.local:4000/v1"
+)
+AGENTGATEWAY_API_KEY = os.environ.get("AGENTGATEWAY_API_KEY", "")
+AGENTGATEWAY_CLIENT_CREDENTIALS = os.environ.get("AGENTGATEWAY_CLIENT_CREDENTIALS", "")

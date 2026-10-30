@@ -13,4 +13,6 @@ urlpatterns = [
     path("api/logout/", views.logout_user, name="logout"),
     path("api/messages/", views.messages, name="messages"),
     path("api/messages/post/", views.post_message, name="post-message"),
+    path("api/tools/", views.tool_catalog, name="tool-catalog"),
+    path("api/tools/<str:name>/", views.execute_tool, name="execute-tool"),
 ]

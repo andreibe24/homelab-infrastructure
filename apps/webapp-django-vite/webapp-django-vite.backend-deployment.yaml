@@ -13,10 +13,20 @@ spec:
       labels:
         app: webapp-django-vite-backend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: backend
           image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend:dev
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 8000
           env:
@@ -45,16 +55,38 @@ spec:
               value: chat.localhost
             - name: CSRF_TRUSTED_ORIGINS
               value: https://chat.localhost
+            - name: AGENTGATEWAY_BASE_URL
+              value: http://agentgateway-proxy.agentgateway.svc.cluster.local:4000/v1
+            - name: AGENTGATEWAY_CLIENT_CREDENTIALS
+              valueFrom:
+                secretKeyRef:
+                  name: agentgateway-client-keys
+                  key: forum-app
+          startupProbe:
+            httpGet:
+              path: /api/health/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: chat.localhost
+            failureThreshold: 30
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api/health/
               port: 8000
+              httpHeaders:
+                - name: Host
+                  value: chat.localhost
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /api/health/
               port: 8000
+              httpHeaders:
+                - name: Host
+                  value: chat.localhost
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:

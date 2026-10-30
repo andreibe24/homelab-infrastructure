@@ -9,7 +9,9 @@ from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
+from .llm import GatewayError
 from .models import ChatMessage
+from .tools import TOOLS, ToolInputError, run_tool
 
 
 def _json_body(request):
@@ -155,3 +157,27 @@ def post_message(request):
         },
         status=201,
     )
+
+
+@require_GET
+def tool_catalog(request):
+    error = _authenticated(request)
+    if error:
+        return error
+    return JsonResponse({"tools": TOOLS})
+
+
+@require_POST
+def execute_tool(request, name):
+    error = _authenticated(request)
+    if error:
+        return error
+    data = _json_body(request)
+    if data is None:
+        return JsonResponse({"error": "Enter a JSON object of tool arguments."}, status=400)
+    try:
+        return JsonResponse(run_tool(name, data))
+    except ToolInputError as error:
+        return JsonResponse({"error": str(error)}, status=400)
+    except GatewayError as error:
+        return JsonResponse({"error": str(error)}, status=error.status)
