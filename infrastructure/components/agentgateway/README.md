@@ -69,9 +69,120 @@ Store an accepted credential only in `stringData.Authorization` using SOPS as
 described below. Never paste it into chat, shell arguments, or plaintext Git files.
 Revoke the rejected PAT if it was created solely for this deployment.
 
+### GitHub CLI OAuth procedure
+
+GitHub CLI browser OAuth was verified end-to-end with this deployment:
+`/v1/responses`, model `gpt-6-luna`, and the HTTPS test script returned HTTP 200.
+This confirms the tested credential/account combination, not arbitrary OAuth tokens.
+
+1. Sign in with the account that has the Copilot license:
+
+   ```sh
+   gh auth login --hostname github.com --web
+   gh auth status
+   ```
+
+   Use browser OAuth, not `--with-token`. Review the requested permissions.
+   `GH_TOKEN` and `GITHUB_TOKEN` can override stored credentials; ensure neither
+   supplies the rejected PAT. Check the active account before exporting a token.
+   Prefer the OS credential store; do not request `--insecure-storage`.
+
+2. With the age private key available, run this Bash pipeline from the repository
+   root. It transfers the credential into SOPS without printing it or placing it
+   in process arguments:
+
+   ```bash
+   (
+     set -euo pipefail
+     gh auth token --hostname github.com |
+       python3 -c '
+   import json, sys
+   token = sys.stdin.read().strip()
+   if not token:
+       raise SystemExit("No GitHub credential returned")
+   json.dump(token, sys.stdout)
+   ' |
+       sops set --value-stdin \
+         clusters/dev/init-manifests/secrets/copilot-token.secret.yaml \
+         '["stringData"]["Authorization"]'
+   )
+   ```
+
+   Do not run with shell tracing (`set -x`), print the token, or save it to a
+   plaintext temporary file.
+
+3. Commit and push only the encrypted Secret change. Wait for Flux and Reflector
+   reconciliation, then run:
+
+   ```sh
+   bash infrastructure/components/agentgateway-config/forum-app.test.sh
+   ```
+
+   The script uses `https://agentgateway.localhost:8443/v1/responses` and `curl -k`
+   for the local development certificate. HTTP 200 with an assistant response
+   confirms the full path; Flux readiness alone does not confirm authentication.
+
+### OAuth lifetime and permission limits
+
+There is no fixed lifetime established by the successful inference request.
+Traditional non-expiring OAuth tokens remain usable until revoked; GitHub
+automatically revokes OAuth tokens unused for one year and can revoke them for
+other security reasons. Newer GitHub CLI authentication flows can also issue
+expiring credentials depending on CLI, host, and OAuth app configuration.
+Do not assume the credential is permanent or that all OAuth tokens expire after
+the same interval.
+
+The Secret stores only a snapshot of the access token, not a refresh token or a
+running GitHub CLI session. CLI refresh on your workstation does not refresh the
+cluster's copy. Repeat the export, encrypted commit, and reconciliation after
+rotation, expiration, or reauthentication. Adopt a manual rotation schedule
+(for example, every 30-90 days); this is an operational policy, not an expiry
+enforced by GitHub.
+
+GitHub CLI OAuth is not full account administration by default, but its minimum
+scopes are still broad: `repo`, `read:org`, and `gist`. In particular, `repo`
+includes read/write access to repositories the account can access. GitHub CLI
+does not support removing these minimum scopes, so this procedure cannot produce
+a Copilot-only or repository-read-only token.
+
+Inspect the active token's granted scopes without displaying its value:
+
+```sh
+gh api --hostname github.com --include user |
+  grep -i '^x-oauth-scopes:'
+```
+
+To remove additional grants, reset to the CLI defaults:
+
+```sh
+gh auth refresh --hostname github.com --reset-scopes
+```
+
+This still retains the broad minimum scopes. Re-export the resulting token to
+SOPS and repeat the inference test; do not assume changes to local credentials
+updated the deployed Secret or revoked previously exported tokens.
+
+Gateway policies constrain gateway callers, not the underlying OAuth token.
+Someone who steals that token can bypass those policies and exercise its GitHub
+permissions directly. Avoid authorizing unnecessary organization access and
+consider a separately licensed account with no sensitive repository access,
+subject to GitHub's account and subscription policies. A Copilot-only alternative
+requires a separately verified authentication flow; the rejected PAT is not one.
+
+To revoke the OAuth grant, use GitHub Settings -> Applications -> Authorized
+OAuth Apps -> GitHub CLI. Revocation affects other CLI sessions using that grant;
+removing a local login or deleting the Kubernetes Secret is not issuer-side
+revocation.
+
+References: [GitHub CLI login](https://cli.github.com/manual/gh_auth_login),
+[scope management](https://cli.github.com/manual/gh_auth_refresh),
+[OAuth scopes](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps),
+and [token expiration and revocation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/token-expiration-and-revocation).
+
 ### Store and rotate credentials
 
-The Copilot token is an encrypted placeholder and must be replaced before use.
+The Copilot token was initially an encrypted placeholder; replace it before use
+unless a working credential has already been provisioned.
 The client key is randomly generated. With the age private key available to SOPS,
 edit the encrypted files from the repository root:
 
