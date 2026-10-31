@@ -126,7 +126,8 @@ class HomelabBootstrapTest < Minitest::Test
     refute_includes homelab_values.dig("securityContext", "capabilities", "ciliumAgent"), "SYS_MODULE"
     homelab_values.delete("cgroup")
     homelab_values.delete("securityContext")
-    assert_equal dev_values.reject { |key, _| key == "k8sServiceHost" }, homelab_values
+    assert_equal({ "replicas" => 2 }, homelab_values.delete("operator"))
+    assert_equal dev_values.reject { |key, _| %w[k8sServiceHost operator].include?(key) }, homelab_values
   end
 
   def test_dev_bootstrap_uses_common_and_cluster_values
