@@ -164,6 +164,6 @@ class HomelabBootstrapTest < Minitest::Test
   def render(path)
     output, status = Open3.capture2e("kubectl", "kustomize", path, chdir: ROOT)
     assert status.success?, output
-    YAML.safe_load_stream(output)
+    YAML.load_stream(output).compact
   end
 end
