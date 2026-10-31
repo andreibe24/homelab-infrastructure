@@ -7,7 +7,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 # renovate: datasource=github-releases depName=siderolabs/talos
 TALOS_VERSION="v1.14.5"
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
-KUBERNETES_VERSION="v1.37.1"
+KUBERNETES_VERSION="v1.37.2"
 # renovate: datasource=github-releases depName=kubernetes-sigs/gateway-api
 GATEWAY_API_VERSION="v1.7.0"
 # renovate: datasource=docker depName=quay.io/cilium/charts/cilium
