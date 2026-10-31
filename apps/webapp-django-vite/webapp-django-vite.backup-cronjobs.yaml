@@ -1,0 +1,230 @@
+---
+# Daily logical dumps uploaded to remote storage (backups/webapp-django-vite/<item>/).
+# The newest KEEP_LAST dumps are kept. Restore with scripts/storage-ctl.sh.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-chat-db
+spec:
+  schedule: "15 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            homelab.local/backup: "true"
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 26
+            runAsGroup: 26
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: dump
+              image: ghcr.io/cloudnative-pg/postgresql:17.6
+              command: ["/bin/sh", "/scripts/pg-dump.sh"]
+              env:
+                - name: ITEM
+                  value: chat-db
+                - name: PGHOST
+                  value: chat-db-rw
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: chat-db-app
+                      key: dbname
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: chat-db-app
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: chat-db-app
+                      key: password
+              volumeMounts:
+                - name: work
+                  mountPath: /work
+                - name: scripts
+                  mountPath: /scripts
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          containers:
+            - name: upload
+              image: rclone/rclone:1.75.2
+              command: ["/bin/sh", "/scripts/upload.sh"]
+              env:
+                - name: APP
+                  value: webapp-django-vite
+                - name: ITEM
+                  value: chat-db
+                - name: KEEP_LAST
+                  value: "14"
+              volumeMounts:
+                - name: work
+                  mountPath: /work
+                - name: scripts
+                  mountPath: /scripts
+                - name: storage-config
+                  mountPath: /storage-config
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          volumes:
+            - name: work
+              emptyDir:
+                sizeLimit: 2Gi
+            - name: tmp
+              emptyDir:
+                sizeLimit: 64Mi
+            - name: scripts
+              configMap:
+                name: backup-scripts
+                defaultMode: 0555
+            - name: storage-config
+              secret:
+                secretName: s3-storage-backend
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-chat-vectors
+spec:
+  schedule: "30 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            homelab.local/backup: "true"
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 26
+            runAsGroup: 26
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: dump
+              image: ghcr.io/cloudnative-pg/postgresql:17.6-standard-trixie@sha256:2114d9615a5c56004ff4f586032d0e61cbaca7c9449d3b57ea240630b28c37b8
+              command: ["/bin/sh", "/scripts/pg-dump.sh"]
+              env:
+                - name: ITEM
+                  value: chat-vectors
+                - name: PGHOST
+                  value: chat-vectors-rw
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: chat-vectors-app
+                      key: dbname
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: chat-vectors-app
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: chat-vectors-app
+                      key: password
+              volumeMounts:
+                - name: work
+                  mountPath: /work
+                - name: scripts
+                  mountPath: /scripts
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          containers:
+            - name: upload
+              image: rclone/rclone:1.75.2
+              command: ["/bin/sh", "/scripts/upload.sh"]
+              env:
+                - name: APP
+                  value: webapp-django-vite
+                - name: ITEM
+                  value: chat-vectors
+                - name: KEEP_LAST
+                  value: "14"
+              volumeMounts:
+                - name: work
+                  mountPath: /work
+                - name: scripts
+                  mountPath: /scripts
+                - name: storage-config
+                  mountPath: /storage-config
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          volumes:
+            - name: work
+              emptyDir:
+                sizeLimit: 4Gi
+            - name: tmp
+              emptyDir:
+                sizeLimit: 64Mi
+            - name: scripts
+              configMap:
+                name: backup-scripts
+                defaultMode: 0555
+            - name: storage-config
+              secret:
+                secretName: s3-storage-backend

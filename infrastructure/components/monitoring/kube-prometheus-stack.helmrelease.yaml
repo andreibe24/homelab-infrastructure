@@ -266,6 +266,8 @@ spec:
       prometheusSpec:
         replicas: 2
         retention: 2d
+        # Prometheus uses node-local storage; cap it so metrics cannot fill the disk.
+        retentionSize: 2GB
         externalLabels:
           cluster: dev
         serviceMonitorSelectorNilUsesHelmValues: false

@@ -6,6 +6,15 @@ metadata:
 spec:
   instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:17.6-standard-trixie@sha256:2114d9615a5c56004ff4f586032d0e61cbaca7c9449d3b57ea240630b28c37b8
+  # Retention: bound WAL kept for replication slots and temporary files so a
+  # lagging replica or runaway query cannot fill the volume.
+  postgresql:
+    parameters:
+      max_wal_size: 512MB
+      min_wal_size: 80MB
+      max_slot_wal_keep_size: 512MB
+      temp_file_limit: 512MB
+      log_temp_files: 10MB
   bootstrap:
     initdb:
       database: campfire_vectors

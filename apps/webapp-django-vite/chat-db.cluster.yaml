@@ -6,6 +6,15 @@ metadata:
 spec:
   instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:17.6
+  # Retention: bound WAL kept for replication slots and temporary files so a
+  # lagging replica or runaway query cannot fill the volume.
+  postgresql:
+    parameters:
+      max_wal_size: 512MB
+      min_wal_size: 80MB
+      max_slot_wal_keep_size: 512MB
+      temp_file_limit: 512MB
+      log_temp_files: 10MB
   bootstrap:
     initdb:
       database: chatdb

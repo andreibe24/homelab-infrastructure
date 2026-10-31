@@ -18,8 +18,10 @@ spec:
     - --maxmemory=256mb
     - --cache_mode=false
     - --proactor_threads=1
+    # Overwrite one snapshot instead of writing a new timestamped set every run.
+    - --dbfilename=dump
   snapshot:
-    cron: "* * * * *"
+    cron: "*/5 * * * *"
     persistentVolumeClaimSpec:
       accessModes:
         - ReadWriteOnce

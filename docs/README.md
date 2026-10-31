@@ -27,6 +27,8 @@ Paths in the guides are relative to the repository root unless stated otherwise.
 - [KEDA autoscaling and high availability](components/keda.md).
 - [Monitoring](components/monitoring.md).
 - [Reloader](components/reloader.md).
+- [Remote storage and backups](components/s3-storage.md): Google Drive-backed
+  S3 gateway, scheduled backups, restore, retention and deletion.
 
 Keep application and infrastructure documentation under `docs/`, not beside
 the manifests or application source. Add new guides to this index.

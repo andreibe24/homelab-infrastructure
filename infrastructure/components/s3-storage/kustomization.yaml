@@ -1,0 +1,8 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: s3-storage
+resources:
+  - s3-storage.deployment.yaml
+  - s3-storage.service.yaml
+  - s3-storage.networkpolicy.yaml

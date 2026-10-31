@@ -34,6 +34,8 @@ resources:
   - ./postgres-operator/cloudnative-pg.kustomization.yaml
   - ./redis-operator/redis-operator.namespace.yaml
   - ./redis-operator/dragonfly-operator.kustomization.yaml
+  - ./s3-storage/s3-storage.namespace.yaml
+  - ./s3-storage/s3-storage.ks.yaml
 patches:
   - target:
       version: v1

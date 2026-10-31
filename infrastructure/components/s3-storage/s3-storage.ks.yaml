@@ -1,0 +1,24 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: s3-storage
+  namespace: s3-storage
+spec:
+  dependsOn:
+    - name: linkerd
+      namespace: linkerd
+    - name: reflector
+      namespace: reflector
+  interval: 1h
+  retryInterval: 1m
+  timeout: 5m
+  path: ./infrastructure/components/s3-storage
+  prune: true
+  # The gateway needs the s3-storage-backend and s3-storage-credentials Secrets
+  # created with scripts/storage-ctl.sh; do not block other reconciliations until they exist.
+  wait: false
+  sourceRef:
+    kind: GitRepository
+    name: homelab-infrastructure
+    namespace: flux-system

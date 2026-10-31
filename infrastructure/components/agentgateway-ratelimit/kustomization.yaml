@@ -2,6 +2,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: agentgateway
+components:
+  - ../../backup/component
 resources:
   - ./agentgateway-ratelimit.configmap.yaml
   - ./agentgateway-ratelimit.deployment.yaml
@@ -11,3 +13,4 @@ resources:
   - ./agentgateway-ratelimit-dragonfly.dragonfly.yaml
   - ./agentgateway-ratelimit-dragonfly.serviceaccount.yaml
   - ./agentgateway-ratelimit-dragonfly.networkpolicy.yaml
+  - ./agentgateway-ratelimit-dragonfly.cronjob.yaml

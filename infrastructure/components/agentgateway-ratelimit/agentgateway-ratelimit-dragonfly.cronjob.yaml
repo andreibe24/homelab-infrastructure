@@ -1,0 +1,99 @@
+---
+# Pod 0's Dragonfly snapshots (written every 5 minutes) are archived daily to
+# remote storage (backups/agentgateway/agentgateway-ratelimit-dragonfly/). The
+# job runs on pod 0's node because its ReadWriteOnce volume can only be mounted there.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-agentgateway-ratelimit-dragonfly
+spec:
+  schedule: "2 3 * * *" # offset from the 5-minute snapshot cron
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            homelab.local/backup: "true"
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+            fsGroupChangePolicy: OnRootMismatch
+            seccompProfile:
+              type: RuntimeDefault
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: kubernetes.io/hostname
+                  labelSelector:
+                    matchLabels:
+                      statefulset.kubernetes.io/pod-name: agentgateway-ratelimit-dragonfly-0
+          containers:
+            - name: archive
+              image: rclone/rclone:1.75.2
+              command:
+                - /bin/sh
+                - -c
+                # Drop leftover timestamped snapshots before archiving.
+                - >-
+                  find /snapshots -type f -name 'dump-20*' -mmin +60 -delete;
+                  /bin/sh /scripts/pvc-archive.sh
+              env:
+                - name: APP
+                  value: agentgateway
+                - name: ITEM
+                  value: agentgateway-ratelimit-dragonfly
+                - name: SRC
+                  value: /snapshots
+                - name: KEEP_LAST
+                  value: "3"
+              volumeMounts:
+                - name: snapshots
+                  mountPath: /snapshots
+                - name: work
+                  mountPath: /work
+                - name: scripts
+                  mountPath: /scripts
+                - name: storage-config
+                  mountPath: /storage-config
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          volumes:
+            - name: snapshots
+              persistentVolumeClaim:
+                claimName: df-agentgateway-ratelimit-dragonfly-0
+            - name: work
+              emptyDir:
+                sizeLimit: 1Gi
+            - name: tmp
+              emptyDir:
+                sizeLimit: 64Mi
+            - name: scripts
+              configMap:
+                name: backup-scripts
+                defaultMode: 0555
+            - name: storage-config
+              secret:
+                secretName: s3-storage-backend
