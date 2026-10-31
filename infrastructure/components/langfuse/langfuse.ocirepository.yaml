@@ -1,0 +1,10 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: langfuse
+spec:
+  interval: 1h
+  url: oci://ghcr.io/langfuse/langfuse-k8s/charts/langfuse
+  ref:
+    tag: 2.2.0

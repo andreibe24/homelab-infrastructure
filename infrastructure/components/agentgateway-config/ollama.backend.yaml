@@ -1,0 +1,12 @@
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: ollama
+spec:
+  ai:
+    provider:
+      # Ollama serves the OpenAI-compatible API; the model name comes from the request.
+      openai: {}
+      host: ollama.llm-serving.svc.cluster.local
+      port: 11434

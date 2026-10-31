@@ -57,6 +57,7 @@ app_names.each do |namespace|
   allowed_names = peers.filter_map { |peer| peer.dig("namespaceSelector", "matchLabels", "kubernetes.io/metadata.name") }
   expected = %w[gateway monitoring]
   expected << "postgres-operator" if namespace == "webapp-django-vite"
+  expected << "agentgateway" if namespace == "llm-serving"
   assert(peers.include?({ "podSelector" => {} }) && allowed_names.sort == expected.sort && peers.size == expected.size + 1,
          "Unexpected ingress peers for #{namespace}")
 end

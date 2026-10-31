@@ -25,7 +25,8 @@ spec:
       action: Require
       policy:
         matchExpressions:
-          # forum-app may POST only gpt-6-luna to these explicitly allowed endpoints.
+          # forum-app may POST only gpt-6-luna (Copilot) or qwen2.5:0.5b (Ollama, selected
+          # by the x-llm-backend header) to these explicitly allowed endpoints.
           # The current Copilot provider supports only /v1/responses.
           # Disable streaming so response guards inspect the full result before release.
           # Allow one completion and require the endpoint's output cap (1..2048).
@@ -33,7 +34,7 @@ spec:
           - >-
             apiKey.client_id == "forum-app" &&
             request.method == "POST" &&
-            json(request.body).model == "gpt-6-luna" &&
+            json(request.body).model in ["gpt-6-luna", "qwen2.5:0.5b"] &&
             (!has(json(request.body).stream) || json(request.body).stream == false) &&
             (!has(json(request.body).n) || json(request.body).n == 1) &&
             ["max_tokens", "max_completion_tokens", "max_output_tokens"].all(field,

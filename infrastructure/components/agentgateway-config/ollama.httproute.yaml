@@ -1,0 +1,26 @@
+---
+# Selected by the x-llm-backend: ollama request header. Requests without it keep
+# using the Copilot route on the same paths because header matches take precedence.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ollama
+spec:
+  parentRefs:
+    - name: agentgateway-proxy
+      sectionName: http
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /v1/chat/completions
+          headers:
+            - name: x-llm-backend
+              value: ollama
+      timeouts:
+        request: 300s
+        backendRequest: 300s
+      backendRefs:
+        - group: agentgateway.dev
+          kind: AgentgatewayBackend
+          name: ollama

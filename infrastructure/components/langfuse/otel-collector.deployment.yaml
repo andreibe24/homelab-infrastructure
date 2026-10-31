@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langfuse-otel-collector
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: langfuse-otel-collector
+  template:
+    metadata:
+      labels:
+        app: langfuse-otel-collector
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: collector
+          image: docker.io/otel/opentelemetry-collector-contrib:0.132.1
+          args:
+            - --config=/conf/config.yaml
+          env:
+            - name: LANGFUSE_OTEL_AUTHORIZATION
+              valueFrom:
+                secretKeyRef:
+                  name: langfuse
+                  key: otel-authorization
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+          readinessProbe:
+            tcpSocket:
+              port: otlp-grpc
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: langfuse-otel-collector

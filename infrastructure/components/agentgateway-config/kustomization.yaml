@@ -7,5 +7,8 @@ resources:
   - ./agentgateway-proxy.gateway.yaml
   - ./copilot.backend.yaml
   - ./copilot.httproute.yaml
+  - ./ollama.backend.yaml
+  - ./ollama.httproute.yaml
+  - ./agentgateway-tracing.policy.yaml
   - ./agentgateway-client-auth.policy.yaml
   - ./agentgateway.httproute.yaml
