@@ -27,6 +27,24 @@
   },
   "packageRules": [
     {
+      "description": "Review Talos and Kubernetes compatibility and upgrade steps manually",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["siderolabs/talos", "kubernetes/kubernetes"],
+      "automerge": false
+    },
+    {
+      "description": "Review Cilium bootstrap and Flux adoption upgrades together",
+      "matchPackageNames": ["quay.io/cilium/charts/cilium"],
+      "groupName": "cilium chart",
+      "automerge": false
+    },
+    {
+      "description": "Review Flux Operator bootstrap and adoption upgrades together",
+      "matchPackageNames": ["ghcr.io/controlplaneio-fluxcd/charts/flux-operator"],
+      "groupName": "flux operator chart",
+      "automerge": false
+    },
+    {
       "description": "Keep Flux OCI sources tag-based unless explicitly enabled for image values",
       "matchManagers": ["flux"],
       "pinDigests": false

@@ -45,13 +45,13 @@ plaintext, so avoid logs and shared terminals.
 ## Homelab and recipient isolation
 
 Homelab has no configured secrets reconciliation or age key in this repository
-yet. The existing `.sops.yaml` rule matches **all** `*.secret.yaml` paths even
+yet, and its Talos bootstrap does not reuse dev secrets. The existing `.sops.yaml` rule matches **all** `*.secret.yaml` paths even
 though its recipient is labeled for dev. Placing a homelab secret under a new
 directory would therefore encrypt it to the dev recipient, not a separate
 homelab key.
 
-Before adding homelab secrets, establish its bootstrap and secure key
-provisioning, define ordered path-specific SOPS rules with the appropriate
+Before adding homelab secrets, establish secure key provisioning, define
+ordered path-specific SOPS rules with the appropriate
 recipients, and configure a homelab secrets directory, Kustomization and Flux
 decryption reference. Verify the selected recipient and ensure existing dev
 secrets remain decryptable. Do not commit keys or reuse dev credentials merely
@@ -62,3 +62,7 @@ For a new recipient, generate an age key in a secure location using
 `age-keygen -o <private-key-file>` and use only its public recipient in the
 SOPS rule. Back up the private key securely and provision it to the intended
 cluster without committing it.
+
+Generated Talos machine configurations, talosconfig and kubeconfig contain
+cluster credentials. Store and back them up outside the repository with
+restricted permissions; see [homelab-talos.md](homelab-talos.md).

@@ -10,18 +10,24 @@ point; this file is the root agent-instruction entry point.
   for `apps/`, `infrastructure/components/`, and `infrastructure/imported/`.
   Inspect neighboring manifests before adding resources; preserve their Flux
   reconciliation, namespace, network policy, and prune behavior.
-- `clusters/dev` is the configured kind cluster. `clusters/homelab` is not yet
-  bootstrapped. The three top-level Kustomizations are currently shared inputs:
-  adding to one affects every cluster that reconciles it. Consider both clusters
-  and explicitly scope cluster-specific changes; do not assume homelab already
-  uses the dev bootstrap, secrets, networking, or settings. See
-  [docs/architecture.md](docs/architecture.md).
+- `clusters/dev` is the configured kind cluster; `clusters/homelab` provides a
+  two-node Talos bootstrap, but requires operator provisioning. Its shared
+  infrastructure and apps are suspended until their prerequisites are addressed.
+  Changes to shared roots affect both clusters when enabled. Keep shared Cilium
+  values in `infrastructure/imported/cilium/` and cluster overrides in
+  `infrastructure/imported/cilium/custom-values/<cluster>.yaml`. Scope
+  cluster-specific resources explicitly. See
+  [docs/architecture.md](docs/architecture.md) and
+  [docs/homelab-talos.md](docs/homelab-talos.md).
 - Follow [docs/secrets.md](docs/secrets.md). Dev encrypted manifests live in
   `clusters/dev/init-manifests/secrets/` and are listed in its `kustomization.yaml`.
   Never commit plaintext secret values or private keys. Do not use the dev age
   recipient for homelab by default; the current SOPS rule matches all
   `*.secret.yaml` paths and must be revised before introducing a separate
   homelab recipient.
+- Talos machine configurations, kubeconfigs, installation parameters and
+  private keys stay outside Git. Talos and Kubernetes bootstrap versions are
+  Renovate-managed but require manual compatibility review and upgrade.
 - Keep Flux `OCIRepository`, `HelmRelease`, and Flux `Kustomization` resources
   in separate `*.ocirepository.yaml`, `*.helmrelease.yaml`, and `*.ks.yaml`
   files. Keep OCI chart tags tag-based; image digest pinning is handled by

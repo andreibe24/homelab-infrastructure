@@ -1,7 +1,6 @@
 kubeProxyReplacement: true
 socketLB:
   hostNamespaceOnly: true
-k8sServiceHost: dev-control-plane
 k8sServicePort: 6443
 ipam:
   mode: kubernetes

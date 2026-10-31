@@ -20,6 +20,7 @@ CILIUM_VERSION="1.20.4"
 FLUX_OPERATOR_VERSION="0.62.1"
 
 CILIUM_VALUES="../../../infrastructure/imported/cilium/custom.helmvalues.yaml"
+CILIUM_CLUSTER_VALUES="../../../infrastructure/imported/cilium/custom-values/dev.yaml"
 OPERATOR_VALUES="../../../infrastructure/imported/flux-operator/custom.helmvalues.yaml"
 FLUX_INSTANCE="flux.fluxinstance.yaml"
 
@@ -50,7 +51,7 @@ if (( ${#missing[@]} > 0 )); then
 fi
 
 # 2. Files the script depends on
-for f in "$KIND_CONFIG" "$CILIUM_VALUES" "$OPERATOR_VALUES" "$FLUX_INSTANCE"; do
+for f in "$KIND_CONFIG" "$CILIUM_VALUES" "$CILIUM_CLUSTER_VALUES" "$OPERATOR_VALUES" "$FLUX_INSTANCE"; do
   [[ -f "$f" ]] || fail "required file not found: $f"
 done
 [[ -f "$SOPS_AGE_KEY" ]] || fail "SOPS age key file not found: $SOPS_AGE_KEY"
@@ -87,6 +88,7 @@ helm install cilium \
   --version "$CILIUM_VERSION" \
   --namespace kube-system \
   -f "$CILIUM_VALUES" \
+  -f "$CILIUM_CLUSTER_VALUES" \
   --wait
 
 # 4. Flux namespace

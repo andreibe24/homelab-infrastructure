@@ -8,6 +8,10 @@ configMapGenerator:
   - name: cilium-custom-helmvalues
     files:
       - values.yaml=custom.helmvalues.yaml # key=file
+  - name: cilium-cluster-helmvalues
+    files:
+      - dev.yaml=custom-values/dev.yaml
+      - homelab.yaml=custom-values/homelab.yaml
 generatorOptions:
   disableNameSuffixHash: true # keeps the name stable for valuesFrom
 resources:

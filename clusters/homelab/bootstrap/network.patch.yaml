@@ -1,0 +1,7 @@
+apiVersion: v1alpha1
+kind: KubeProxyConfig
+enabled: false
+---
+apiVersion: v1alpha1
+kind: KubeFlannelCNIConfig
+$patch: delete
