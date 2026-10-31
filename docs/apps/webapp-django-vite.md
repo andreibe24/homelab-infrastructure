@@ -193,3 +193,17 @@ dependency PRs release a new patch version.
 To test a PR, temporarily select its `pr-N` tag for the deployments in Git.
 Return to a stable `X.Y.Z` tag afterward so Renovate can track upgrades.
 Make the GHCR packages public, or provide an image pull secret.
+
+## Database connections and high availability
+
+The `chat-db` and `chat-vectors` CloudNativePG clusters run three instances
+(one primary, two streaming replicas). The backend and MCP server define two
+Django connections: `default` (`DATABASE_HOST=chat-db-rw`, the primary) and
+`replica` (`DATABASE_REPLICA_HOST=chat-db-ro`, the read-only replicas).
+`config.db_router.PrimaryReplicaRouter` sends reads to `replica` and writes and
+migrations to `default`. Leaving `DATABASE_REPLICA_HOST` unset (local SQLite
+development) keeps a single connection. Reads can briefly lag writes; code that
+must read its own write immediately should use `.using("default")`.
+
+All Deployments scale between two and five replicas through KEDA
+`ScaledObject`s (see [KEDA autoscaling](../components/keda.md)).

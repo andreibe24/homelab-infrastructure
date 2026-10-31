@@ -1,0 +1,38 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: falco-falcosidekick
+spec:
+  scaleTargetRef:
+    name: falco-falcosidekick
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: AverageValue
+      metadata:
+        value: 500m
+    - type: memory
+      metricType: AverageValue
+      metadata:
+        value: 256Mi
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: falcosidekick-critical
+spec:
+  scaleTargetRef:
+    name: falcosidekick-critical
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: AverageValue
+      metadata:
+        value: 500m
+    - type: memory
+      metricType: AverageValue
+      metadata:
+        value: 256Mi

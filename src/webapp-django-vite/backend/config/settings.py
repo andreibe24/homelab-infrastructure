@@ -69,6 +69,17 @@ DATABASES = {
     }
 }
 
+# Reads go to the replica connection only when a replica host is configured.
+DATABASE_REPLICA_HOST = os.environ.get("DATABASE_REPLICA_HOST")
+DATABASE_ROUTERS = []
+if DATABASE_REPLICA_HOST:
+    DATABASES["replica"] = {
+        **DATABASES["default"],
+        "HOST": DATABASE_REPLICA_HOST,
+        "TEST": {"MIRROR": "default"},
+    }
+    DATABASE_ROUTERS = ["config.db_router.PrimaryReplicaRouter"]
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",

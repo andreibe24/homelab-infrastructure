@@ -4,7 +4,6 @@ kind: Deployment
 metadata:
   name: webapp-django-vite-frontend
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: webapp-django-vite-frontend

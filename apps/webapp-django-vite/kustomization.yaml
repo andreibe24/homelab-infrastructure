@@ -16,3 +16,4 @@ resources:
   - webapp-django-vite.httproute.yaml
   - webapp-django-vite.networkpolicy.yaml
   - webapp-django-vite.linkerd-policy.yaml
+  - webapp-django-vite.scaledobjects.yaml

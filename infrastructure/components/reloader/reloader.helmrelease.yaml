@@ -16,4 +16,7 @@ spec:
       retries: 3
   values:
     reloader:
+      enableHA: true
+      deployment:
+        replicas: 2
       autoReloadAll: false

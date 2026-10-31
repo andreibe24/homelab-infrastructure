@@ -5,6 +5,7 @@ namespace: agentgateway
 resources:
   - ./agentgateway-ratelimit.configmap.yaml
   - ./agentgateway-ratelimit.deployment.yaml
+  - ./agentgateway-ratelimit.scaledobject.yaml
   - ./agentgateway-ratelimit.service.yaml
   - ./agentgateway-ratelimit.networkpolicy.yaml
   - ./agentgateway-ratelimit-dragonfly.dragonfly.yaml

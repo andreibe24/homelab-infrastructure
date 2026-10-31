@@ -4,7 +4,6 @@ kind: Deployment
 metadata:
   name: webapp-django-vite-backend
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: webapp-django-vite-backend
@@ -39,6 +38,8 @@ spec:
               value: chatdb
             - name: DATABASE_HOST
               value: chat-db-rw
+            - name: DATABASE_REPLICA_HOST
+              value: chat-db-ro
             - name: DATABASE_PORT
               value: "5432"
             - name: DATABASE_USER

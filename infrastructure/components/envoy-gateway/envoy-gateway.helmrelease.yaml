@@ -15,5 +15,7 @@ spec:
     remediation:
       retries: 3
   values:
+    deployment:
+      replicas: 2
     crds:
       enabled: false

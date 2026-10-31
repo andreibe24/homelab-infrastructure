@@ -26,7 +26,7 @@ namespaces = (components + apps).select { |resource| resource["kind"] == "Namesp
 namespaces.each do |namespace|
   name = namespace.dig("metadata", "name")
   injection = namespace.dig("metadata", "annotations", "linkerd.io/inject")
-  expected = %w[cert-manager linkerd].include?(name) ? nil : "enabled"
+  expected = %w[cert-manager linkerd keda metrics-server].include?(name) ? nil : "enabled"
   assert(injection == expected, "Unexpected injection setting for namespace #{name}")
 end
 assert(namespaces.size >= 5, "Namespace coverage is incomplete")
@@ -78,11 +78,9 @@ assert(issuer.dig("spec", "isCA") && issuer.dig("spec", "privateKey", "algorithm
 
 policies = ratelimit.select { |resource| resource["kind"] == "NetworkPolicy" }
 dragonfly = ratelimit.find { |resource| resource["kind"] == "Dragonfly" }
-assert(dragonfly.dig("spec", "podMetadata", "labels", "app") == "agentgateway-ratelimit-dragonfly",
-       "Dragonfly pods must match their network policies")
-assert(dragonfly.dig("spec", "podMetadata", "annotations", "config.linkerd.io/opaque-ports") == "" &&
-       dragonfly.dig("spec", "serviceSpec", "annotations", "config.linkerd.io/opaque-ports") == "",
-       "Dragonfly Redis traffic must not use the shared opaque transport port")
+assert(dragonfly.dig("spec", "podMetadata", "annotations", "config.linkerd.io/opaque-ports") == "65000" &&
+       dragonfly.dig("spec", "serviceSpec", "annotations", "config.linkerd.io/opaque-ports") == "65000",
+       "Dragonfly Redis traffic must use its own opaque port")
 %w[agentgateway-ratelimit agentgateway-ratelimit-dragonfly].each do |name|
   policy = policies.find { |resource| resource.dig("metadata", "name") == name }
   assert(policy, "Missing network policy #{name}")

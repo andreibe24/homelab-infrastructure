@@ -82,6 +82,7 @@ spec:
                 send_resolved: true
           - name: "null"
       alertmanagerSpec:
+        replicas: 2
         podMetadata:
           annotations:
             reloader.stakater.com/auto: "true"
@@ -263,6 +264,7 @@ spec:
       enabled: false
     prometheus:
       prometheusSpec:
+        replicas: 2
         retention: 2d
         externalLabels:
           cluster: dev

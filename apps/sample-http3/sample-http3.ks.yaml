@@ -5,6 +5,9 @@ metadata:
   name: sample-http3
   namespace: sample-http3
 spec:
+  dependsOn:
+    - name: keda
+      namespace: keda
   interval: 1h
   retryInterval: 1m
   timeout: 5m

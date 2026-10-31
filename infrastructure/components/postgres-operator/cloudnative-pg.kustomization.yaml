@@ -6,6 +6,8 @@ metadata:
   namespace: postgres-operator
 spec:
   dependsOn:
+    - name: keda
+      namespace: keda
     - name: linkerd
       namespace: linkerd
   interval: 1h

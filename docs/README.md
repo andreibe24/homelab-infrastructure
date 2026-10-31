@@ -24,6 +24,7 @@ Paths in the guides are relative to the repository root unless stated otherwise.
 - [Campfire source-code map](apps/webapp-django-vite-source.md).
 - [Agentgateway](components/agentgateway.md).
 - [Linkerd](components/linkerd.md).
+- [KEDA autoscaling and high availability](components/keda.md).
 - [Monitoring](components/monitoring.md).
 - [Reloader](components/reloader.md).
 
