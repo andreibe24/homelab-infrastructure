@@ -4,6 +4,7 @@ from unittest import mock
 from unittest.mock import patch
 
 from pgvector import Vector
+
 from server import RagInputError, ask_campfire, retrieve_sources, validate_question
 
 
