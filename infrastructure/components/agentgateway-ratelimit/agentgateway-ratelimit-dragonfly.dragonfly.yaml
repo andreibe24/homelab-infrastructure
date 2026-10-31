@@ -9,13 +9,11 @@ spec:
   imagePullPolicy: IfNotPresent
   serviceAccountName: agentgateway-ratelimit-dragonfly
   podMetadata:
-    labels:
-      app: agentgateway-ratelimit-dragonfly
     annotations:
-      config.linkerd.io/opaque-ports: ""
+      config.linkerd.io/opaque-ports: "65000"
   serviceSpec:
     annotations:
-      config.linkerd.io/opaque-ports: ""
+      config.linkerd.io/opaque-ports: "65000"
   args:
     - --maxmemory=256mb
     - --cache_mode=false
