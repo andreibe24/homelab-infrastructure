@@ -7,6 +7,8 @@ metadata:
 spec:
   dependsOn:
     - name: envoy-gateway-crds
+    - name: linkerd
+      namespace: linkerd
   interval: 1h
   retryInterval: 1m
   timeout: 10m

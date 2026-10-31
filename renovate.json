@@ -64,6 +64,13 @@
       "pinDigests": false
     },
     {
+      "description": "Upgrade Linkerd CRDs and control plane together",
+      "matchManagers": ["flux"],
+      "matchFileNames": ["infrastructure/components/linkerd/*.helmrelease.yaml"],
+      "groupName": "linkerd charts",
+      "automerge": false
+    },
+    {
       "description": "Update forum images together using plain X.Y.Z release image tags",
       "matchDatasources": ["docker"],
       "matchPackageNames": [

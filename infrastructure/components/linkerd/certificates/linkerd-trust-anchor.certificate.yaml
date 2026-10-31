@@ -1,0 +1,20 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: linkerd-trust-anchor
+spec:
+  isCA: true
+  commonName: linkerd-trust-anchor
+  secretName: linkerd-trust-anchor
+  duration: 87600h
+  renewBefore: 8760h
+  privateKey:
+    algorithm: ECDSA
+    rotationPolicy: Never
+  secretTemplate:
+    labels:
+      reconcile.fluxcd.io/watch: Enabled
+  issuerRef:
+    name: linkerd-trust-anchor-selfsigned
+    kind: Issuer

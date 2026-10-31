@@ -5,6 +5,9 @@ resources:
   - ./cert-manager/cert-manager.namespace.yaml
   - ./cert-manager/cert-manager.ks.yaml
   - ./cert-manager/cert-manager-issuers.ks.yaml
+  - ./linkerd/linkerd.namespace.yaml
+  - ./linkerd/linkerd-certificates.ks.yaml
+  - ./linkerd/linkerd.ks.yaml
   - ./envoy-gateway/envoy-gateway.namespace.yaml
   - ./envoy-gateway-crds/envoy-gateway-source.ks.yaml
   - ./envoy-gateway-crds/envoy-gateway-crds.ks.yaml
@@ -27,3 +30,15 @@ resources:
   - ./postgres-operator/cloudnative-pg.kustomization.yaml
   - ./redis-operator/redis-operator.namespace.yaml
   - ./redis-operator/dragonfly-operator.kustomization.yaml
+patches:
+  - target:
+      version: v1
+      kind: Namespace
+      labelSelector: homelab.local/linkerd-injection!=disabled
+    patch: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ignored
+        annotations:
+          linkerd.io/inject: enabled

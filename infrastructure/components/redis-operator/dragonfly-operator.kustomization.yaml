@@ -5,6 +5,9 @@ metadata:
   name: dragonfly-operator
   namespace: redis-operator
 spec:
+  dependsOn:
+    - name: linkerd
+      namespace: linkerd
   interval: 1h
   retryInterval: 1m
   timeout: 10m
