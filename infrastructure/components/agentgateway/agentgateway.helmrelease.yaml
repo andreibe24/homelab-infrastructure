@@ -20,5 +20,11 @@ spec:
     controller:
       replicaCount: 2
     fullnameOverride: agentgateway-controller
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
     istio:
       enabled: false

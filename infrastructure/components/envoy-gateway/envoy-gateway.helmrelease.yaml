@@ -17,5 +17,12 @@ spec:
   values:
     deployment:
       replicas: 2
+      envoyGateway:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
     crds:
       enabled: false

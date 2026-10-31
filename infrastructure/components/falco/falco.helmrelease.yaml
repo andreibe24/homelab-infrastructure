@@ -141,6 +141,12 @@ spec:
     # Falcosidekick alert routing and Web UI
     falcosidekick:
       replicaCount: 2
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
       enabled: true
       podAnnotations:
         reloader.stakater.com/auto: "true"
