@@ -16,7 +16,7 @@ spec:
       retries: 3
   values:
     deployment:
-      replicas: 2
+      replicas: 1
       envoyGateway:
         resources:
           requests:

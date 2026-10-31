@@ -6,7 +6,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: agentgateway-ratelimit
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu

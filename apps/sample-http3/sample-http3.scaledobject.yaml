@@ -6,7 +6,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: sample-http3
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu

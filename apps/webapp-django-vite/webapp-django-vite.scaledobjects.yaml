@@ -6,7 +6,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: webapp-django-vite-backend
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu
@@ -27,7 +27,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: webapp-django-vite-frontend
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu
@@ -48,7 +48,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: webapp-django-vite-mcp
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu
@@ -69,7 +69,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: webapp-django-vite-rag
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu

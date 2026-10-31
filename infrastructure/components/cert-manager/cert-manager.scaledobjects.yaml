@@ -6,7 +6,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: cert-manager
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu
@@ -25,7 +25,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: cert-manager-cainjector
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu
@@ -44,7 +44,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: cert-manager-webhook
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu

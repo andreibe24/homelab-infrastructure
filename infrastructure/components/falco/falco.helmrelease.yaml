@@ -140,7 +140,7 @@ spec:
 
     # Falcosidekick alert routing and Web UI
     falcosidekick:
-      replicaCount: 2
+      replicaCount: 1
       resources:
         requests:
           cpu: 50m

@@ -6,7 +6,7 @@ server and webhooks at two replicas each). Both run in namespaces that opt out
 of Linkerd injection so the API server can reach them.
 
 Stateless Deployments have a `ScaledObject` with a `cpu` and a `memory`
-trigger, `minReplicaCount: 2` and `maxReplicaCount: 5`:
+trigger, `minReplicaCount: 1` and `maxReplicaCount: 5`:
 
 - Apps (`whoami`, `sample-http3`, the four `webapp-django-vite` Deployments)
   and `agentgateway-ratelimit` use `Utilization` triggers scoped with

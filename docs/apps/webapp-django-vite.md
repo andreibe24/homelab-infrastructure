@@ -205,5 +205,5 @@ migrations to `default`. Leaving `DATABASE_REPLICA_HOST` unset (local SQLite
 development) keeps a single connection. Reads can briefly lag writes; code that
 must read its own write immediately should use `.using("default")`.
 
-All Deployments scale between two and five replicas through KEDA
+All Deployments scale between one and five replicas through KEDA
 `ScaledObject`s (see [KEDA autoscaling](../components/keda.md)).

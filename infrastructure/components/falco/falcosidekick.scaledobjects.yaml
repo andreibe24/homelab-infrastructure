@@ -6,7 +6,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: falco-falcosidekick
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu
@@ -25,7 +25,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: falcosidekick-critical
-  minReplicaCount: 2
+  minReplicaCount: 1
   maxReplicaCount: 5
   triggers:
     - type: cpu
