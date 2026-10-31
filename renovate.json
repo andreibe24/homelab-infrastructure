@@ -10,7 +10,9 @@
   "enabledManagers": [
     "flux",
     "github-actions",
+    "gitlabci",
     "kubernetes",
+    "kustomize",
     "mise",
     "custom.regex",
     "pip_requirements",
@@ -24,6 +26,43 @@
     "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.ya?ml$/"]
   },
   "packageRules": [
+    {
+      "description": "Keep Flux OCI sources tag-based unless explicitly enabled for image values",
+      "matchManagers": ["flux"],
+      "pinDigests": false
+    },
+    {
+      "description": "Pin container images in manifests, Dockerfiles and CI",
+      "matchManagers": ["kubernetes", "dockerfile", "github-actions", "gitlabci"],
+      "matchDatasources": ["docker"],
+      "pinDigests": true
+    },
+    {
+      "description": "Pin images in Flux HelmRelease values and Kustomizations",
+      "matchManagers": ["flux"],
+      "matchFileNames": ["**/*.helmrelease.yaml", "**/*.ks.yaml"],
+      "matchDatasources": ["docker"],
+      "pinDigests": true
+    },
+    {
+      "description": "Leave non-image Kustomize dependencies unmanaged",
+      "matchManagers": ["kustomize"],
+      "enabled": false
+    },
+    {
+      "description": "Pin Kustomize image overrides without pinning OCI Helm charts",
+      "matchManagers": ["kustomize"],
+      "matchDepTypes": ["Kustomization", "Component"],
+      "matchDatasources": ["docker"],
+      "enabled": true,
+      "pinDigests": true
+    },
+    {
+      "description": "Keep Flux OCI Helm chart versions as tags",
+      "matchManagers": ["flux"],
+      "matchDepTypes": ["HelmChart"],
+      "pinDigests": false
+    },
     {
       "description": "Update forum images together using plain X.Y.Z release image tags",
       "matchDatasources": ["docker"],
@@ -69,13 +108,6 @@
       "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.sh$/"],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+[A-Z0-9_]+_VERSION=\"(?<currentValue>[^\"]+)\""
-      ]
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/^clusters\\/dev\\/bootstrap\\/kind\\.cluster\\.yaml$/"],
-      "matchStrings": [
-        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+image:\\s*kindest/node:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
       ]
     }
   ],
