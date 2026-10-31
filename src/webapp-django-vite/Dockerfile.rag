@@ -1,0 +1,19 @@
+FROM python:3.13-slim@sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb
+WORKDIR /app
+
+ENV FASTEMBED_CACHE_PATH=/opt/fastembed-cache \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+COPY rag/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+    && groupadd --gid 10002 rag \
+    && useradd --uid 10002 --gid rag --home-dir /app --no-create-home rag
+COPY rag/server.py .
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='BAAI/bge-small-en-v1.5', cache_dir='/opt/fastembed-cache')" \
+    && chmod -R a+rX /opt/fastembed-cache \
+    && chown rag:rag /app
+
+USER rag
+EXPOSE 8080
+CMD ["python", "server.py"]

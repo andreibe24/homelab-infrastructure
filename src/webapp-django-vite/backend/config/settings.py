@@ -103,3 +103,6 @@ AGENTGATEWAY_BASE_URL = os.environ.get(
 )
 AGENTGATEWAY_API_KEY = os.environ.get("AGENTGATEWAY_API_KEY", "")
 AGENTGATEWAY_CLIENT_CREDENTIALS = os.environ.get("AGENTGATEWAY_CLIENT_CREDENTIALS", "")
+RAG_SERVICE_URL = os.environ.get(
+    "RAG_SERVICE_URL", "http://webapp-django-vite-rag:8080"
+)

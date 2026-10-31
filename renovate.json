@@ -93,7 +93,8 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": [
         "ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend",
-        "ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-frontend"
+        "ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-frontend",
+        "ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-rag"
       ],
       "groupName": "forum app images",
       "allowedVersions": "/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/"
@@ -105,6 +106,14 @@
         "src/webapp-django-vite/Dockerfile.backend"
       ],
       "groupName": "forum backend dependencies"
+    },
+    {
+      "description": "Group forum RAG dependencies and its base image",
+      "matchFileNames": [
+        "src/webapp-django-vite/rag/**",
+        "src/webapp-django-vite/Dockerfile.rag"
+      ],
+      "groupName": "forum RAG dependencies"
     },
     {
       "description": "CI Python must move with the backend base image",

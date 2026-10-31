@@ -20,6 +20,11 @@ recipient in `.sops.yaml` and be provisioned securely outside Git. Do not
 generate a replacement key for existing encrypted files unless their recipients
 are deliberately rotated.
 
+The Campfire Secret also contains the MCP HTTP bearer token. Keep it SOPS
+encrypted and do not expose the MCP service publicly; retrieve the value only
+for an authorized local MCP client as described in
+[the Campfire guide](apps/webapp-django-vite.md).
+
 From the repository root, edit an existing encrypted secret with:
 
 ```sh

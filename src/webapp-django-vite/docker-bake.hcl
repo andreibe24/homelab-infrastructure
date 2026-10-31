@@ -26,6 +26,16 @@ target "frontend" {
   ]
 }
 
+target "rag" {
+  context    = "."
+  dockerfile = "Dockerfile.rag"
+  platforms  = ["linux/amd64", "linux/arm64"]
+  tags = [
+    for tag in split(",", TAGS) :
+    "${REGISTRY}/webapp-django-vite-rag:${tag}"
+  ]
+}
+
 group "default" {
-  targets = ["backend", "frontend"]
+  targets = ["backend", "frontend", "rag"]
 }

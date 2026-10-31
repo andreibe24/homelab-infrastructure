@@ -16,7 +16,7 @@ from django.test import (
 )
 
 from .llm import GatewayError, generate
-from .management.commands.mcp_server import create_server
+from .management.commands.mcp_server import StaticTokenVerifier, create_server
 from .models import ChatMessage
 
 
@@ -185,70 +185,60 @@ class AskCampfireTests(TestCase):
             content_type="application/json",
         ).status_code, 403)
 
-    @patch("chat.rag.generate", return_value="The group discussed Django [1].")
-    def test_retrieves_ranked_messages_from_full_history_and_returns_sources(self, generate):
-        older = ChatMessage.objects.create(
-            author=self.user, content="Django and PostgreSQL are useful together."
-        )
-        ChatMessage.objects.bulk_create(
-            ChatMessage(author=self.user, content=f"Unrelated message {i}")
-            for i in range(25)
-        )
-        newer = ChatMessage.objects.create(author=self.user, content="Django is fun.")
-        response = self.ask({"question": "  What about Django and PostgreSQL?  "})
+    @patch("chat.rag.urlopen")
+    def test_forwards_question_to_rag_service_and_returns_sources(self, urlopen):
+        result = {
+            "text": "The group discussed deployment [17].",
+            "sources": [
+                {
+                    "id": 17,
+                    "username": "camper",
+                    "content": "We deployed Django with Helm.",
+                    "createdAt": "2026-10-30T12:00:00+00:00",
+                }
+            ],
+        }
+        urlopen.return_value = BytesIO(json.dumps(result).encode())
+        response = self.ask({"question": "  How did we deploy it?  "})
 
         self.assertEqual(response.status_code, 200)
-        result = response.json()
-        self.assertEqual([source["id"] for source in result["sources"]], [older.id, newer.id])
-        self.assertEqual(result["sources"][0]["username"], "camper")
-        self.assertEqual(result["sources"][0]["content"], older.content)
-        self.assertIn("createdAt", result["sources"][0])
-        self.assertEqual(result["text"], "The group discussed Django [1].")
-        instructions, context = generate.call_args.args
-        self.assertIn("untrusted", instructions)
-        self.assertEqual(context["question"], "What about Django and PostgreSQL?")
-        self.assertEqual(context["messages"], result["sources"])
-        self.assertEqual(ChatMessage.objects.count(), 27)
+        self.assertEqual(response.json(), result)
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "http://webapp-django-vite-rag:8080/ask")
+        self.assertEqual(json.loads(request.data), {"question": "How did we deploy it?"})
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], 60)
 
-    @patch("chat.rag.generate", return_value="A response.")
-    def test_limits_sources_and_breaks_ties_by_recency(self, generate):
-        rows = [
-            ChatMessage.objects.create(author=self.user, content=f"Campfire story {i}")
-            for i in range(10)
-        ]
-        result = self.ask({"question": "campfire"}).json()
-        self.assertEqual(
-            [source["id"] for source in result["sources"]],
-            [row.id for row in reversed(rows[-8:])],
-        )
-        self.assertEqual(len(generate.call_args.args[1]["messages"]), 8)
-
-    @patch("chat.rag.generate")
-    def test_no_matches_does_not_send_an_ai_request(self, generate):
-        ChatMessage.objects.create(author=self.user, content="Hello, everyone.")
-        response = self.ask({"question": "What about astronomy?"})
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["sources"], [])
-        self.assertIn("No matching", response.json()["text"])
-        generate.assert_not_called()
-
-    @patch("chat.rag.generate")
-    def test_invalid_questions_do_not_send_an_ai_request(self, generate):
+    @patch("chat.rag.urlopen")
+    def test_invalid_questions_do_not_call_rag_service(self, urlopen):
         for data in [
             {}, {"question": ""}, {"question": " "}, {"question": 123},
-            {"question": "x" * 1001}, {"question": "what is the"},
+            {"question": "x" * 1001},
             {"question": "Django", "extra": True}, [],
         ]:
             with self.subTest(data=data):
                 self.assertEqual(self.ask(data).status_code, 400)
-        generate.assert_not_called()
+        urlopen.assert_not_called()
 
-    @patch("chat.rag.generate", side_effect=GatewayError("Quota reached.", 429))
-    def test_gateway_error_is_reported(self, generate):
-        ChatMessage.objects.create(author=self.user, content="Django")
+    @patch("chat.rag.urlopen")
+    def test_rag_service_errors_are_reported(self, urlopen):
+        urlopen.side_effect = HTTPError(
+            "http://rag.test/ask", 429, "quota", {}, None
+        )
         response = self.ask({"question": "Django"})
         self.assertEqual(response.status_code, 429)
-        self.assertEqual(response.json(), {"error": "Quota reached."})
+        self.assertEqual(
+            response.json(),
+            {"error": "Campfire search is unavailable. Please try again."},
+        )
+
+    @patch("chat.rag.urlopen")
+    def test_invalid_rag_response_is_reported(self, urlopen):
+        urlopen.return_value = BytesIO(b'{"text": "answer", "sources": "invalid"}')
+        response = self.ask({"question": "Django"})
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(
+            response.json(), {"error": "Campfire search returned an invalid response."}
+        )
 
 
 @override_settings(
@@ -376,3 +366,15 @@ class McpTests(TransactionTestCase):
         user = get_user_model().objects.create_user("disabled", is_active=False)
         with self.assertRaises(CommandError):
             call_command("mcp_server", username=user.username)
+
+    def test_http_transport_requires_a_bearer_token(self):
+        with self.assertRaises(CommandError):
+            call_command("mcp_server", transport="streamable-http")
+
+    def test_http_bearer_token_is_compared_without_timing_shortcuts(self):
+        verifier = StaticTokenVerifier("secret-token")
+        self.assertEqual(
+            async_to_sync(verifier.verify_token)("secret-token").client_id,
+            "campfire-operator",
+        )
+        self.assertIsNone(async_to_sync(verifier.verify_token)("wrong-token"))
