@@ -6,6 +6,8 @@ Paths in the guides are relative to the repository root unless stated otherwise.
 
 - [Architecture and clusters](architecture.md): repository layout, reconciliation,
   cluster status, network policies, and dependency updates.
+- [Talos homelab bootstrap](homelab-talos.md): two-node provisioning, Flux
+  adoption, workload prerequisites, and upgrades.
 - [Adding components](adding-components.md): application, infrastructure, and
   imported-component patterns, naming, and cluster targeting.
 - [Secrets](secrets.md): SOPS/age, the dev secret location, and prerequisites

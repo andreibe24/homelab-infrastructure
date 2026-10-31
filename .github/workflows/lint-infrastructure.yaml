@@ -50,3 +50,6 @@ jobs:
 
       - name: Check network policy coverage
         run: ruby infrastructure/test_networkpolicies.rb
+
+      - name: Check homelab bootstrap
+        run: ruby clusters/homelab/test_bootstrap.rb

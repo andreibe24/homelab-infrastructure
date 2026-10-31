@@ -6,7 +6,7 @@
 | --- | --- |
 | `clusters/dev/bootstrap/` | kind configuration and bootstrap for the dev cluster. |
 | `clusters/dev/init-manifests/` | Flux entry point for dev, including its encrypted secrets. |
-| `clusters/homelab/` | Homelab-specific work in progress, not a complete Flux entry point. |
+| `clusters/homelab/` | Two-node Talos bootstrap and homelab Flux entry point. |
 | `apps/` | Shared application registrations and workload manifests. |
 | `infrastructure/components/` | Shared infrastructure installed and managed by Flux. |
 | `infrastructure/imported/` | Shared Flux definitions for bootstrap-installed infrastructure. |
@@ -30,13 +30,14 @@ two infrastructure roots; individual Flux Kustomizations can add their own
 dependencies. The imported root and its existing components disable pruning,
 whereas apps and ordinary infrastructure use pruning.
 
-`clusters/homelab/` currently contains an allowlist manifest and a placeholder,
-not a bootstrap or complete Kustomization tree. Do not assume it runs the dev
-setup. If homelab eventually points at the same top-level roots, changes to
-those roots will affect both clusters. Introduce explicit cluster-specific
-selection or overlays when a component or setting should differ; do not
-silently deploy dev-only settings to homelab. See
-[adding components](adding-components.md) and [secrets](secrets.md).
+Homelab is a planned single control-plane, single worker Talos cluster; the
+repository cannot provision its hardware without operator-supplied addresses and
+disks. Its Flux entry point adopts a Talos-specific Cilium overlay and the
+shared Flux Operator. Shared infrastructure and apps are defined but suspended
+until storage, secrets, gateway and networking are ready. The existing gateway
+allowlist is not registered. See [homelab bootstrap](homelab-talos.md).
+Once enabled, shared roots affect both clusters; use cluster-specific
+selection or overlays for divergent settings.
 
 ## Network policies
 
@@ -67,6 +68,8 @@ separate from `*.helmrelease.yaml` and `*.ks.yaml`; OCI chart/artifact tags and
 bootstrap chart versions are not container images and must remain tag-based.
 Renovate also updates the Dragonfly operator's remote Kustomize manifest by its
 GitHub tag, without pinning it to a commit digest.
+Talos and Kubernetes bootstrap versions use release tags and require manual
+review and upgrades, not automerge; see [homelab bootstrap](homelab-talos.md).
 
 The daily Renovate workflow requires a GitHub App installed on this repository
 with **Contents: Read and write** and **Pull requests: Read and write**
