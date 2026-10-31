@@ -11,7 +11,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from .llm import GatewayError
 from .models import ChatMessage
-from .rag import ask_campfire
+from .rag import RagServiceError, ask_campfire
 from .tools import TOOLS, ToolInputError, run_tool
 
 
@@ -197,4 +197,6 @@ def ask_forum(request):
     except ToolInputError as error:
         return JsonResponse({"error": str(error)}, status=400)
     except GatewayError as error:
+        return JsonResponse({"error": str(error)}, status=error.status)
+    except RagServiceError as error:
         return JsonResponse({"error": str(error)}, status=error.status)

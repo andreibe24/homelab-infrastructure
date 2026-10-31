@@ -16,18 +16,27 @@ Browser page and JavaScript
 Web server (Vite locally, nginx in the container)
         |
         v
-Django URL routes -> chat application code
-        |                    |
-        v                    +--> PostgreSQL: accounts and forum messages
-        |
-        +--> agentgateway: AI answers and drafts
+Django API
+    |
+    +--> PostgreSQL: accounts and forum messages
+    |
+    +--> RAG service
+             |
+             +--> PostgreSQL + pgvector: semantic retrieval
+             |
+             +--> agentgateway: answer generation
+
+MCP client -> separate MCP pod -> shared forum tools and PostgreSQL
 ```
 
 The browser UI never connects directly to the database or AI provider. In local
 development, Vite forwards `/api/` requests to Django. In the deployed frontend
 container, nginx serves the built page and forwards API, admin, and static-file
-requests to the backend container. The MCP command is a separate entry point:
-it calls the same Python tool functions as the web API.
+requests to the backend container. Django sends Ask Campfire questions to the
+separate RAG service. That service generates embeddings locally, queries the
+pgvector database, and sends retrieved text to agentgateway for answer
+generation. MCP runs in its own pod, using shared backend code and the same
+forum database.
 
 ## Directory and file map
 
@@ -46,13 +55,14 @@ src/webapp-django-vite/
 │       ├── models.py            Database structure for forum messages
 │       ├── views.py             HTTP handlers: login, messages, tools, questions
 │       ├── tools.py             Shared forum tools and AI-assisted drafts
-│       ├── rag.py               Finds relevant messages for Ask Campfire
+│       ├── rag.py               Calls the separate RAG service
 │       ├── llm.py               Sends AI requests to agentgateway
 │       ├── tests.py             Backend behavior tests
 │       ├── admin.py, apps.py    Django admin registration and app setup
 │       ├── migrations/          Versioned changes to the database structure
 │       └── management/commands/
-│           └── mcp_server.py    Starts the local stdio MCP server
+│           └── mcp_server.py    Starts stdio locally or authenticated HTTP in-cluster
+├── rag/                         Embeddings, vector search, and RAG answer API
 ├── frontend/                    Browser interface
 │   ├── index.html               Page structure and element IDs
 │   ├── src/
@@ -64,8 +74,9 @@ src/webapp-django-vite/
 │   └── eslint.config.js         JavaScript lint rules
 ├── Dockerfile.backend           Builds the Django/Gunicorn backend image
 ├── Dockerfile.frontend          Builds browser assets and the nginx image
+├── Dockerfile.rag               Builds the semantic retrieval service image
 ├── nginx.conf                   Serves the page and forwards backend requests
-├── docker-bake.hcl              Builds and tags both container images together
+├── docker-bake.hcl              Builds and tags all application images together
 └── .env.example                 Example local settings; Django does not load it
 ```
 
@@ -84,7 +95,8 @@ instead.
 | An API URL or the backend behavior behind it | `backend/config/urls.py`, then `backend/chat/views.py` |
 | Message data stored in the database | `backend/chat/models.py`; its matching schema history is in `backend/chat/migrations/` |
 | Forum tools used by the page and MCP | `backend/chat/tools.py` |
-| How Ask Campfire finds messages | `backend/chat/rag.py` |
+| How Ask Campfire finds messages | `backend/chat/rag.py` calls retrieval in `rag/server.py` |
+| How messages are embedded and ranked | `rag/server.py` and the `chat-vectors` CNPG Cluster manifest |
 | The request sent to the AI gateway | `backend/chat/llm.py` |
 | Database, security, or environment configuration | `backend/config/settings.py` and `.env.example` |
 | A bug or regression check | `backend/chat/tests.py` or frontend lint/build checks |

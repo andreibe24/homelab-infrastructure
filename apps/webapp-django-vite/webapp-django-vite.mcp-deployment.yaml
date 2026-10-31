@@ -1,0 +1,95 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-django-vite-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp-django-vite-mcp
+  template:
+    metadata:
+      labels:
+        app: webapp-django-vite-mcp
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mcp
+          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend:1.3.0
+          imagePullPolicy: Always
+          command:
+            - python
+            - manage.py
+            - mcp_server
+            - --transport
+            - streamable-http
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: mcp
+              containerPort: 8000
+          env:
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-django-vite
+                  key: django-secret-key
+            - name: DATABASE_NAME
+              value: chatdb
+            - name: DATABASE_HOST
+              value: chat-db-rw
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: chat-db-app
+                  key: username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: chat-db-app
+                  key: password
+            - name: AGENTGATEWAY_BASE_URL
+              value: http://agentgateway-proxy.agentgateway.svc.cluster.local:4000/v1
+            - name: AGENTGATEWAY_CLIENT_CREDENTIALS
+              valueFrom:
+                secretKeyRef:
+                  name: agentgateway-client-keys
+                  key: forum-app
+            - name: MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-django-vite
+                  key: mcp-auth-token
+          startupProbe:
+            tcpSocket:
+              port: mcp
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: mcp
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: mcp
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi

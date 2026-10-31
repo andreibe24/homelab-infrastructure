@@ -105,6 +105,8 @@ jobs:
             backend.cache-to=type=gha,mode=max,scope=chat-backend
             frontend.cache-from=type=gha,scope=chat-frontend
             frontend.cache-to=type=gha,mode=max,scope=chat-frontend
+            rag.cache-from=type=gha,scope=chat-rag
+            rag.cache-to=type=gha,mode=max,scope=chat-rag
         env:
           TAGS: ${{ steps.tags.outputs.value }}
           REGISTRY: ghcr.io/${{ github.repository }}
