@@ -71,6 +71,9 @@ each `UnattendedInstallConfig` disk selector, installer image, networks and
 node role. The Talos 1.14 control-plane patch disables `KubeProxyConfig` and
 removes the default `KubeFlannelCNIConfig`; changing Talos minor versions
 requires revalidating these config document kinds and the generated output.
+Both nodes also receive `clusters/homelab/bootstrap/sysctls.patch.yaml`, which
+raises `fs.inotify.max_user_instances` and `max_user_watches` for Falco, Linkerd
+and the controllers (see [inotify limits](workstation.md#inotify-limits)).
 The control plane retains the standard scheduling taint; normal workloads run
 on the worker. Check resource capacity accordingly.
 

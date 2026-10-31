@@ -131,6 +131,74 @@ An application can spin up `software` threads or workers to make use of all cpus
 
 When you see 45%cpu usage, that's an average value across all cpus. Get current cpu usage per core with `mpstat -P ALL 1 5` (get stats for every second, with a total of 5 snapshots).
 
+# inotify limits
+
+inotify is a Linux kernel API that notifies a process when files or directories
+change, so programs need not poll. Limits are per user and enforced by the
+**host kernel**; every container shares them. The dev cluster runs in kind, so
+all pods and the kind node container count against the host's limits.
+
+| Setting | Meaning | Typical default |
+| --- | --- | --- |
+| `fs.inotify.max_user_instances` | inotify handles one user may create | 128 |
+| `fs.inotify.max_user_watches` | files or directories one user may watch | 8192-65536 |
+| `fs.inotify.max_queued_events` | events queued per handle | 16384 |
+
+## Symptoms
+
+- Falco crash-loops with `Error: could not initialize inotify handler`.
+- Other pods log `too many open files`, `no space left on device` (watch
+  limit), or `failed to create fsnotify watcher`.
+- It appears after adding workloads, such as enabling Linkerd injection,
+  because each workload adds handles.
+
+## What uses inotify here
+
+- **kubelet and containerd**: pod files, mounted ConfigMaps and Secrets, logs.
+- **Falco**: needs a handle at startup for rules and container metadata.
+- **Flux and other Go controllers**: fsnotify for mounted files and certificates.
+- **Envoy Gateway, agentgateway, Linkerd proxy and control plane**: watch
+  mounted certificates and configuration.
+- **cert-manager, Prometheus, Grafana, log collectors**: configuration and log
+  files; heavy with many pods.
+- **Reloader** uses the Kubernetes API, not inotify.
+
+## Check usage
+
+```sh
+sysctl fs.inotify.max_user_instances fs.inotify.max_user_watches
+# Handles in use, by process ID
+sudo find /proc/*/fd -lname 'anon_inode:inotify' 2>/dev/null \
+  | cut -d/ -f3 | sort | uniq -c | sort -rn | head
+```
+
+## Temporary fix (lost at reboot)
+
+```sh
+sudo sysctl -w fs.inotify.max_user_instances=1024 fs.inotify.max_user_watches=524288
+kubectl -n falco delete pod -l app.kubernetes.io/name=falco
+```
+
+## Permanent fix
+
+Create `/etc/sysctl.d/99-inotify.conf` on the host that runs kind:
+
+```conf
+fs.inotify.max_user_instances = 1024
+fs.inotify.max_user_watches = 524288
+```
+
+```sh
+sudo sysctl --system
+sysctl fs.inotify.max_user_instances fs.inotify.max_user_watches
+```
+
+The Talos homelab cluster gets these values from
+`clusters/homelab/bootstrap/sysctls.patch.yaml` (`machine.sysctls`), applied
+when the machine configuration is generated; see
+[Talos homelab bootstrap](homelab-talos.md). Nodes already provisioned need the
+regenerated configuration applied.
+
 # Coding with AI
 
 ## Claude Code

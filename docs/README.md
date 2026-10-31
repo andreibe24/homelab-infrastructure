@@ -12,7 +12,8 @@ Paths in the guides are relative to the repository root unless stated otherwise.
   imported-component patterns, naming, and cluster targeting.
 - [Secrets](secrets.md): SOPS/age, the dev secret location, and prerequisites
   for a separate homelab configuration.
-- [Workstation notes](workstation.md): shell, tooling, Git, and other setup notes.
+- [Workstation notes](workstation.md): shell, tooling, Git, inotify limits, and
+  other setup notes.
 - [External workflow dispatchers](external-workflow-dispatchers/README.md):
   GitLab and Cloudflare alternatives for triggering GitHub Actions.
 - [Todo notes](todo.md).

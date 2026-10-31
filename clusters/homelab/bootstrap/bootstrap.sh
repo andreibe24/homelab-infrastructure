@@ -66,6 +66,7 @@ case "${1:-}" in
       --talos-version "$TALOS_VERSION" --kubernetes-version "$KUBERNETES_VERSION" \
       --install-image "ghcr.io/siderolabs/installer:${TALOS_VERSION}" \
       --install-disk "$CONTROL_PLANE_DISK" \
+      --config-patch "@sysctls.patch.yaml" \
       --config-patch-control-plane "@network.patch.yaml" \
       --config-patch-worker "{\"apiVersion\":\"v1alpha1\",\"kind\":\"UnattendedInstallConfig\",\"provisioning\":{\"diskSelector\":{\"match\":\"disk.dev_path == \\\"${WORKER_DISK}\\\"\"}}}"
     talosctl validate --mode metal --config "$STATE_DIR/controlplane.yaml"
