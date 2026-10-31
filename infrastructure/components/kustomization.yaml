@@ -30,6 +30,7 @@ resources:
   - ./postgres-operator/cloudnative-pg.kustomization.yaml
   - ./redis-operator/redis-operator.namespace.yaml
   - ./redis-operator/dragonfly-operator.kustomization.yaml
+  - ./networkpolicies.yaml
 patches:
   - target:
       version: v1
