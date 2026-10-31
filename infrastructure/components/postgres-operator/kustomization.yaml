@@ -5,3 +5,4 @@ namespace: postgres-operator
 resources:
   - cloudnative-pg.ocirepository.yaml
   - cloudnative-pg.helmrelease.yaml
+  - postgres-operator.networkpolicy.yaml

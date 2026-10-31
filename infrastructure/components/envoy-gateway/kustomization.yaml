@@ -5,3 +5,4 @@ namespace: envoy-gateway
 resources:
   - envoy-gateway.ocirepository.yaml
   - envoy-gateway.helmrelease.yaml
+  - envoy-gateway.networkpolicy.yaml

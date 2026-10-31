@@ -47,3 +47,6 @@ jobs:
 
       - name: Check Linkerd manifests
         run: ruby infrastructure/components/linkerd/test_manifests.rb
+
+      - name: Check network policy coverage
+        run: ruby infrastructure/test_networkpolicies.rb

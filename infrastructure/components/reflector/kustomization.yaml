@@ -5,3 +5,4 @@ namespace: reflector
 resources:
   - reflector.ocirepository.yaml
   - reflector.helmrelease.yaml
+  - reflector.networkpolicy.yaml
