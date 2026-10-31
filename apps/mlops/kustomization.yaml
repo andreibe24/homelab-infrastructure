@@ -1,0 +1,17 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mlops
+resources:
+  - mlops.networkpolicy.yaml
+  - mlflow.persistentvolumeclaim.yaml
+  - mlflow.deployment.yaml
+  - mlflow.service.yaml
+  - training.job.yaml
+  - training.cronjob.yaml
+configMapGenerator:
+  - name: mlops-training
+    files:
+      - train.py
+generatorOptions:
+  disableNameSuffixHash: true
