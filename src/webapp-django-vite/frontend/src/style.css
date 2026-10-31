@@ -261,6 +261,7 @@ button:disabled {
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 16px 24px 0;
 }
@@ -299,12 +300,33 @@ button:disabled {
   line-height: 1.6;
 }
 
-.tools-view {
+.tools-view,
+.ask-view {
   padding: 24px;
 }
 
-.tools-view > .muted {
+.tools-view > .muted,
+.ask-view > .muted {
   margin-top: 8px;
+}
+
+.ask-view form button {
+  margin: 12px 0 20px;
+}
+
+.ask-answer {
+  margin: 16px 0;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.ask-sources {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
 .tool-notice {

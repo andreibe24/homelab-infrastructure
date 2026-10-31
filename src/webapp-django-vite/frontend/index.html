@@ -46,6 +46,7 @@
         </header>
         <div class="tabs" role="tablist" aria-label="Workspace">
           <button id="forum-tab" type="button" role="tab" aria-selected="true" aria-controls="forum-view">Forum</button>
+          <button id="ask-tab" type="button" role="tab" aria-selected="false" aria-controls="ask-view" tabindex="-1">Ask Campfire</button>
           <button id="tools-tab" type="button" role="tab" aria-selected="false" aria-controls="tools-view" tabindex="-1">MCP tools</button>
         </div>
         <section id="forum-view" role="tabpanel" aria-labelledby="forum-tab">
@@ -63,6 +64,23 @@
             <textarea id="message-input" name="content" rows="2" maxlength="2000" placeholder="Say something kind…" required></textarea>
             <button type="submit">Send</button>
           </form>
+        </section>
+        <section id="ask-view" class="ask-view" role="tabpanel" aria-labelledby="ask-tab" hidden>
+          <h2>Ask Campfire</h2>
+          <p class="muted">Ask about a topic discussed around the fire. We'll search the shared forum and use matching messages to answer.</p>
+          <p class="tool-notice">Your question and up to 8 matching forum messages are sent to the AI gateway. Avoid sensitive information. Answers can be inaccurate; check the sources. Nothing is posted.</p>
+          <form id="ask-form">
+            <label for="ask-question">Your question</label>
+            <textarea id="ask-question" name="question" rows="3" maxlength="1000" placeholder="What have we discussed about Django?" required></textarea>
+            <button type="submit">Ask</button>
+          </form>
+          <section id="ask-result" class="tool-result" aria-labelledby="ask-result-title" hidden>
+            <h3 id="ask-result-title">Answer</h3>
+            <p id="ask-disclaimer" class="muted">AI-generated; verify against the retrieved messages below.</p>
+            <p id="ask-answer" class="ask-answer"></p>
+            <h3 id="ask-sources-title">Retrieved messages</h3>
+            <ol id="ask-sources" class="ask-sources" aria-labelledby="ask-sources-title"></ol>
+          </section>
         </section>
         <section id="tools-view" class="tools-view" role="tabpanel" aria-labelledby="tools-tab" hidden>
           <h2>Forum toolkit</h2>

@@ -11,6 +11,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from .llm import GatewayError
 from .models import ChatMessage
+from .rag import ask_campfire
 from .tools import TOOLS, ToolInputError, run_tool
 
 
@@ -177,6 +178,22 @@ def execute_tool(request, name):
         return JsonResponse({"error": "Enter a JSON object of tool arguments."}, status=400)
     try:
         return JsonResponse(run_tool(name, data))
+    except ToolInputError as error:
+        return JsonResponse({"error": str(error)}, status=400)
+    except GatewayError as error:
+        return JsonResponse({"error": str(error)}, status=error.status)
+
+
+@require_POST
+def ask_forum(request):
+    error = _authenticated(request)
+    if error:
+        return error
+    data = _json_body(request)
+    if data is None or set(data) != {"question"}:
+        return JsonResponse({"error": "Enter a question."}, status=400)
+    try:
+        return JsonResponse(ask_campfire(data["question"]))
     except ToolInputError as error:
         return JsonResponse({"error": str(error)}, status=400)
     except GatewayError as error:

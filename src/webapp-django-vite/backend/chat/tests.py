@@ -165,6 +165,92 @@ class ForumToolTests(TestCase):
         self.assertEqual(response.json(), {"error": "Quota reached."})
 
 
+class AskCampfireTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user("camper")
+        self.client.force_login(self.user)
+
+    def ask(self, data):
+        return self.client.post(
+            "/api/ask/", data=json.dumps(data), content_type="application/json"
+        )
+
+    def test_requires_authentication_and_csrf(self):
+        self.client.logout()
+        self.assertEqual(self.ask({"question": "Django?"}).status_code, 401)
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        self.assertEqual(client.post(
+            "/api/ask/", data='{"question":"Django?"}',
+            content_type="application/json",
+        ).status_code, 403)
+
+    @patch("chat.rag.generate", return_value="The group discussed Django [1].")
+    def test_retrieves_ranked_messages_from_full_history_and_returns_sources(self, generate):
+        older = ChatMessage.objects.create(
+            author=self.user, content="Django and PostgreSQL are useful together."
+        )
+        ChatMessage.objects.bulk_create(
+            ChatMessage(author=self.user, content=f"Unrelated message {i}")
+            for i in range(25)
+        )
+        newer = ChatMessage.objects.create(author=self.user, content="Django is fun.")
+        response = self.ask({"question": "  What about Django and PostgreSQL?  "})
+
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        self.assertEqual([source["id"] for source in result["sources"]], [older.id, newer.id])
+        self.assertEqual(result["sources"][0]["username"], "camper")
+        self.assertEqual(result["sources"][0]["content"], older.content)
+        self.assertIn("createdAt", result["sources"][0])
+        self.assertEqual(result["text"], "The group discussed Django [1].")
+        instructions, context = generate.call_args.args
+        self.assertIn("untrusted", instructions)
+        self.assertEqual(context["question"], "What about Django and PostgreSQL?")
+        self.assertEqual(context["messages"], result["sources"])
+        self.assertEqual(ChatMessage.objects.count(), 27)
+
+    @patch("chat.rag.generate", return_value="A response.")
+    def test_limits_sources_and_breaks_ties_by_recency(self, generate):
+        rows = [
+            ChatMessage.objects.create(author=self.user, content=f"Campfire story {i}")
+            for i in range(10)
+        ]
+        result = self.ask({"question": "campfire"}).json()
+        self.assertEqual(
+            [source["id"] for source in result["sources"]],
+            [row.id for row in reversed(rows[-8:])],
+        )
+        self.assertEqual(len(generate.call_args.args[1]["messages"]), 8)
+
+    @patch("chat.rag.generate")
+    def test_no_matches_does_not_send_an_ai_request(self, generate):
+        ChatMessage.objects.create(author=self.user, content="Hello, everyone.")
+        response = self.ask({"question": "What about astronomy?"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["sources"], [])
+        self.assertIn("No matching", response.json()["text"])
+        generate.assert_not_called()
+
+    @patch("chat.rag.generate")
+    def test_invalid_questions_do_not_send_an_ai_request(self, generate):
+        for data in [
+            {}, {"question": ""}, {"question": " "}, {"question": 123},
+            {"question": "x" * 1001}, {"question": "what is the"},
+            {"question": "Django", "extra": True}, [],
+        ]:
+            with self.subTest(data=data):
+                self.assertEqual(self.ask(data).status_code, 400)
+        generate.assert_not_called()
+
+    @patch("chat.rag.generate", side_effect=GatewayError("Quota reached.", 429))
+    def test_gateway_error_is_reported(self, generate):
+        ChatMessage.objects.create(author=self.user, content="Django")
+        response = self.ask({"question": "Django"})
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.json(), {"error": "Quota reached."})
+
+
 @override_settings(
     AGENTGATEWAY_BASE_URL="http://gateway.test/v1",
     AGENTGATEWAY_API_KEY="fake-forum-key",

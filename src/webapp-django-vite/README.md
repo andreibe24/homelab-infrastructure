@@ -4,6 +4,8 @@ A learning app with a shared forum, Django accounts, PostgreSQL, and a small
 vanilla-JavaScript Vite frontend. Sign in to use either workspace tab:
 
 - **Forum**: read/post messages and privately summarize the conversation.
+- **Ask Campfire**: ask a question about the shared forum and get a private,
+  AI-generated answer with retrieved messages to check as sources.
 - **MCP tools**: read recent messages, summarize, or draft a reply. Review a
   draft and explicitly move it to the composer; only **Send** publishes it.
 
@@ -61,6 +63,13 @@ entry (`key` and `metadata.client_id`, which must be `forum-app`).
 
 Summaries and drafts send up to 20 recent shared messages, plus the draft idea,
 to the configured provider through the gateway. Do not post sensitive data.
+Ask Campfire searches the full forum by matching up to 12 meaningful question
+words against message text, ranks matches by the number of matching words (then
+recency), and sends the question and up to 8 matching messages to the gateway.
+This is keyword retrieval, not semantic search: reword the question if a
+relevant discussion is missed. With no matches, no AI request is made. The
+displayed sources are the retrieved messages, not verified citations; check
+the answer against them. Questions and answers are not posted to the forum.
 The gateway applies guards and shares a quota of 10 requests/minute and 100,000
 input/output tokens/day across browser and MCP calls. Guards are not complete
 data-loss or prompt-injection protection; AI text must be reviewed.

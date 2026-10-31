@@ -11,6 +11,9 @@ const tabs = [...document.querySelectorAll('[role="tab"]')];
 const toolList = document.querySelector("#tool-list");
 const toolResult = document.querySelector("#tool-result");
 const useDraftButton = document.querySelector("#use-draft-button");
+const askForm = document.querySelector("#ask-form");
+const askResult = document.querySelector("#ask-result");
+const askSources = document.querySelector("#ask-sources");
 let csrfToken = "";
 let session = 0;
 let loadingMessages = false;
@@ -38,7 +41,8 @@ for (const tab of tabs) {
       event.preventDefault();
       const next = event.key === "Home" ? tabs[0]
         : event.key === "End" ? tabs.at(-1)
-          : tabs[(tabs.indexOf(tab) + 1) % tabs.length];
+          : tabs[(tabs.indexOf(tab) + (event.key === "ArrowLeft" ? -1 : 1)
+            + tabs.length) % tabs.length];
       selectTab(next);
       next.focus();
     }
@@ -56,6 +60,10 @@ function setAnonymous() {
   document.querySelector("#summary-text").textContent = "";
   document.querySelector("#tool-output").textContent = "";
   document.querySelector("#reply-idea").value = "";
+  askForm.reset();
+  askResult.hidden = true;
+  document.querySelector("#ask-answer").textContent = "";
+  askSources.replaceChildren();
   messageForm.reset();
   usernameLabel.textContent = "";
   lastMessages = "";
@@ -272,6 +280,48 @@ messageForm.addEventListener("submit", async (event) => {
     if (currentSession === session) showStatus(error.message);
   } finally {
     disableForm(messageForm, false);
+  }
+});
+
+askForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const question = askForm.elements.question.value.trim();
+  if (!question) return;
+  const currentSession = session;
+  disableForm(askForm, true);
+  askResult.hidden = true;
+  showStatus("Searching the forum…");
+  try {
+    const data = await request("/api/ask/", {
+      method: "POST", body: JSON.stringify({ question }),
+    });
+    if (currentSession !== session) return;
+    document.querySelector("#ask-answer").textContent = data.text;
+    askSources.replaceChildren();
+    for (const source of data.sources) {
+      const item = document.createElement("li");
+      item.className = "message";
+      const heading = document.createElement("div");
+      heading.className = "message-heading";
+      const author = document.createElement("strong");
+      author.textContent = `[${source.id}] ${source.username}`;
+      const time = document.createElement("time");
+      time.dateTime = source.createdAt;
+      time.textContent = formatDate(source.createdAt);
+      heading.append(author, time);
+      const content = document.createElement("p");
+      content.textContent = source.content;
+      item.append(heading, content);
+      askSources.append(item);
+    }
+    document.querySelector("#ask-sources-title").hidden = !data.sources.length;
+    document.querySelector("#ask-disclaimer").hidden = !data.sources.length;
+    askResult.hidden = false;
+    showStatus("Done. Nothing has been posted.");
+  } catch (error) {
+    if (currentSession === session) showStatus(error.message);
+  } finally {
+    disableForm(askForm, false);
   }
 });
 
