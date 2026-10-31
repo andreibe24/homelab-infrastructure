@@ -1,5 +1,6 @@
 import json
 
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -47,8 +48,15 @@ def current_user(request):
     return JsonResponse({"username": request.user.get_username()})
 
 
+@require_GET
+def auth_config(request):
+    return JsonResponse({"oidc": settings.OIDC_ENABLED})
+
+
 @require_POST
 def register(request):
+    if settings.OIDC_ENABLED:
+        return JsonResponse({"error": "Use the central sign-in."}, status=403)
     data = _json_body(request)
     if data is not None and (
         not isinstance(data.get("username"), str)
@@ -82,6 +90,8 @@ def register(request):
 
 @require_POST
 def login_user(request):
+    if settings.OIDC_ENABLED:
+        return JsonResponse({"error": "Use the central sign-in."}, status=403)
     data = _json_body(request)
     if data is not None and (
         not isinstance(data.get("username"), str)

@@ -109,6 +109,27 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 DATA_UPLOAD_MAX_MEMORY_SIZE = 65536
 
+OIDC_ENABLED = os.environ.get("OIDC_ENABLED", "false").lower() == "true"
+if OIDC_ENABLED:
+    INSTALLED_APPS += ["mozilla_django_oidc"]
+    AUTHENTICATION_BACKENDS = ["chat.oidc.CampfireOIDCBackend"]
+    OIDC_RP_CLIENT_ID = os.environ["OIDC_CLIENT_ID"]
+    OIDC_RP_CLIENT_SECRET = os.environ["OIDC_CLIENT_SECRET"]
+    OIDC_ISSUER = os.environ["OIDC_ISSUER"].rstrip("/")
+    OIDC_OP_AUTHORIZATION_ENDPOINT = f"{OIDC_ISSUER}/protocol/openid-connect/auth"
+    OIDC_BACKCHANNEL = os.environ["OIDC_BACKCHANNEL"].rstrip("/")
+    OIDC_OP_TOKEN_ENDPOINT = f"{OIDC_BACKCHANNEL}/protocol/openid-connect/token"
+    OIDC_OP_USER_ENDPOINT = f"{OIDC_BACKCHANNEL}/protocol/openid-connect/userinfo"
+    OIDC_OP_JWKS_ENDPOINT = f"{OIDC_BACKCHANNEL}/protocol/openid-connect/certs"
+    OIDC_RP_SIGN_ALGO = "RS256"
+    OIDC_VERIFY_SSL = os.environ.get("OIDC_CA_FILE") or True
+    OIDC_RP_SCOPES = "openid profile"
+    OIDC_USE_PKCE = True
+    OIDC_TIMEOUT = 10
+    SESSION_COOKIE_AGE = 3600
+    LOGIN_REDIRECT_URL = "/"
+    LOGIN_REDIRECT_URL_FAILURE = "/?login=failed"
+
 AGENTGATEWAY_BASE_URL = os.environ.get(
     "AGENTGATEWAY_BASE_URL", "http://agentgateway-proxy.agentgateway.svc.cluster.local:4000/v1"
 )

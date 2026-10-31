@@ -1,0 +1,55 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: KeycloakRealmImport
+metadata:
+  name: homelab
+spec:
+  keycloakCRName: keycloak
+  placeholders:
+    GRAFANA_CLIENT_SECRET:
+      secret:
+        name: grafana-oidc
+        key: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+    CAMPFIRE_CLIENT_SECRET:
+      secret:
+        name: campfire-oidc
+        key: OIDC_CLIENT_SECRET
+  realm:
+    realm: homelab
+    enabled: true
+    registrationAllowed: false
+    roles:
+      realm:
+        - name: grafana-admin
+    clients:
+      - clientId: grafana
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        secret: ${GRAFANA_CLIENT_SECRET}
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: false
+        redirectUris:
+          - https://grafana.localhost:8443/login/generic_oauth
+        protocolMappers:
+          - name: realm-roles
+            protocol: openid-connect
+            protocolMapper: oidc-usermodel-realm-role-mapper
+            consentRequired: false
+            config:
+              multivalued: "true"
+              userinfo.token.claim: "true"
+              id.token.claim: "true"
+              access.token.claim: "true"
+              claim.name: roles
+              jsonType.label: String
+      - clientId: campfire
+        enabled: true
+        protocol: openid-connect
+        publicClient: false
+        secret: ${CAMPFIRE_CLIENT_SECRET}
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: false
+        redirectUris:
+          - https://campfire.localhost:8443/api/oidc/callback/
+        attributes:
+          pkce.code.challenge.method: S256

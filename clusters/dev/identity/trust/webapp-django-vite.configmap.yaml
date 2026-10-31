@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: identity-ca
+  namespace: webapp-django-vite
+data:
+  ca.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIB0TCCAVagAwIBAgIUIwDOvSdSPOJGMo9mjafSNArHuZswCgYIKoZIzj0EAwMw
+    JjEkMCIGA1UEAwwbZGV2LWtleWNsb2FrLWJhY2tjaGFubmVsLWNhMB4XDTI2MTAz
+    MDIxMTIwMFoXDTM2MTAyODIxMTIwMFowJjEkMCIGA1UEAwwbZGV2LWtleWNsb2Fr
+    LWJhY2tjaGFubmVsLWNhMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEauCcSXUIRoRb
+    FEuPjTvb83EBXPF/AEQuJLUraQTAv3sviSe/l0AxRVd8k+x4/9XtNqME4yHdcpa2
+    YTc3Fvf22HjXjbUU+HNfDNEl4S85BtmqX0gBpinq/ZlVenybRWUKo0UwQzASBgNV
+    HRMBAf8ECDAGAQH/AgEAMA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUR3dWBjyS
+    yrIeOfgKyppVGxjzLuIwCgYIKoZIzj0EAwMDaQAwZgIxALtj1tQdsH/9yuHhfNTN
+    WFylc9zkpmr0N8aMx0rycink+Pn94b//FuUSEs3zm27+wgIxAK3WfwvAJdDNPTf/
+    J6P+rsdsoULaJ3jQV1+uu35LjpqomiYKhQhBLpPvW5TTPMYz8g==
+    -----END CERTIFICATE-----

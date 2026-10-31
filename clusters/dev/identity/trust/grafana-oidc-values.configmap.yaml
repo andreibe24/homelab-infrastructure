@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-oidc-values
+  namespace: monitoring
+  labels:
+    reconcile.fluxcd.io/watch: Enabled
+data:
+  values.yaml: |
+    grafana:
+      podAnnotations:
+        reloader.stakater.com/auto: "true"
+      env:
+        SSL_CERT_FILE: /etc/identity-ca/ca.crt
+      envValueFrom:
+        GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET:
+          secretKeyRef:
+            name: grafana-oidc
+            key: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+      extraConfigmapMounts:
+        - name: identity-ca
+          mountPath: /etc/identity-ca
+          configMap: identity-ca
+          readOnly: true
+      grafana.ini:
+        server:
+          root_url: https://grafana.localhost:8443/
+        auth.generic_oauth:
+          enabled: true
+          name: Keycloak
+          allow_sign_up: true
+          client_id: grafana
+          scopes: openid profile email
+          auth_url: https://identity.localhost:8443/realms/homelab/protocol/openid-connect/auth
+          token_url: https://keycloak-service.keycloak.svc.cluster.local:8443/realms/homelab/protocol/openid-connect/token
+          api_url: https://keycloak-service.keycloak.svc.cluster.local:8443/realms/homelab/protocol/openid-connect/userinfo
+          validate_id_token: true
+          jwk_set_url: https://keycloak-service.keycloak.svc.cluster.local:8443/realms/homelab/protocol/openid-connect/certs
+          tls_client_ca: /etc/identity-ca/ca.crt
+          use_pkce: true
+          role_attribute_path: "contains(roles || `[]`, 'grafana-admin') && 'Admin' || 'Viewer'"

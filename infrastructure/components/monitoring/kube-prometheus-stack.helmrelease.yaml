@@ -16,6 +16,11 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
+  valuesFrom:
+    - kind: ConfigMap
+      name: grafana-oidc-values
+      valuesKey: values.yaml
+      optional: true
   values:
     alertmanager:
       config:
