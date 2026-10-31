@@ -4,4 +4,4 @@ The kube-prometheus-stack provides Prometheus, Grafana, Alertmanager, Kubernetes
 
 Grafana is available at `https://grafana.localhost`. The chart generates an admin password on installation and stores it in the `monitoring-grafana` Secret in the `monitoring` namespace.
 
-Before Slack notifications can be delivered, set `stringData.slack_api_url` in `alertmanager-slack.secret.yaml` to the incoming webhook URL for the desired Slack channel, then encrypt the file with SOPS before applying it. Do not commit the webhook URL in plaintext.
+Before Slack notifications can be delivered, edit `stringData.slack_api_url` in `clusters/dev/init-manifests/secrets/alertmanager-slack.secret.yaml` with SOPS and set it to the incoming webhook URL for the desired Slack channel. Do not commit the webhook URL in plaintext.

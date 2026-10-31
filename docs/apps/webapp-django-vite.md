@@ -16,7 +16,7 @@ server, not a browser MCP transport. The server exposes three tools:
 
 ## Local development
 
-From `backend/`:
+From `src/webapp-django-vite/backend/`:
 
 ```sh
 python -m venv .venv
@@ -29,16 +29,16 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-In another terminal:
+In another terminal, from the repository root:
 
 ```sh
-cd frontend
+cd src/webapp-django-vite/frontend
 npm ci
 npm run dev
 ```
 
 Open `http://localhost:5173` and register. Vite proxies `/api/` to Django.
-`.env.example` documents the variables; Django does not load it automatically.
+`src/webapp-django-vite/.env.example` documents the variables; Django does not load it automatically.
 Without gateway credentials, accounts, messages, and the recent-messages tool
 still work; AI tools return an explicit configuration error.
 
@@ -76,7 +76,7 @@ data-loss or prompt-injection protection; AI text must be reviewed.
 
 ### MCP client
 
-Use the same database and environment as Django, then launch from `backend/`:
+Use the same database and environment as Django, then launch from `src/webapp-django-vite/backend/`:
 
 ```sh
 .venv/bin/python manage.py mcp_server --username YOUR_REGISTERED_USERNAME
@@ -103,7 +103,7 @@ kubectl -n webapp-django-vite exec -i deployment/webapp-django-vite-backend -- \
 
 ## Checks
 
-From `backend/`, with the development environment above:
+From `src/webapp-django-vite/backend/`, with the development environment above:
 
 ```sh
 ruff check .
@@ -111,13 +111,13 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
-From `frontend/`, run `npm run lint` and `npm run build`. Backend tests exercise
+From `src/webapp-django-vite/frontend/`, run `npm run lint` and `npm run build`. Backend tests exercise
 tool access, shared context, the gateway request contract/errors, and MCP SDK
 tool discovery/execution without spending real inference quota.
 
 ## Containers and Kubernetes
 
-From this directory, `docker buildx bake` builds backend/frontend images for
+From `src/webapp-django-vite/`, `docker buildx bake` builds backend/frontend images for
 amd64 and arm64. Set `TAGS=webapp-django-vite-1.2.3` and `REGISTRY` to override defaults.
 The backend runs migrations on startup and serves collected Django admin static
 files through WhiteNoise. nginx serves the frontend and proxies the Django API,
