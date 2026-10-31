@@ -13,8 +13,10 @@ point; this file is the root agent-instruction entry point.
 - `clusters/dev` is the configured kind cluster; `clusters/homelab` provides a
   two-node Talos bootstrap, but requires operator provisioning. Its shared
   infrastructure and apps are suspended until their prerequisites are addressed.
-  Changes to shared roots affect both clusters when enabled. Preserve homelab's
-  separate Cilium values and explicitly scope cluster-specific resources. See
+  Changes to shared roots affect both clusters when enabled. Keep shared Cilium
+  values in `infrastructure/imported/cilium/` and cluster overrides in
+  `infrastructure/imported/cilium/custom-values/<cluster>.yaml`. Scope
+  cluster-specific resources explicitly. See
   [docs/architecture.md](docs/architecture.md) and
   [docs/homelab-talos.md](docs/homelab-talos.md).
 - Follow [docs/secrets.md](docs/secrets.md). Dev encrypted manifests live in

@@ -6,6 +6,7 @@
 | --- | --- |
 | `clusters/dev/bootstrap/` | kind configuration and bootstrap for the dev cluster. |
 | `clusters/dev/init-manifests/` | Flux entry point for dev, including its encrypted secrets. |
+| `clusters/{dev,homelab}/imported/` | Cluster overlays for bootstrap-installed infrastructure. |
 | `clusters/homelab/` | Two-node Talos bootstrap and homelab Flux entry point. |
 | `apps/` | Shared application registrations and workload manifests. |
 | `infrastructure/components/` | Shared infrastructure installed and managed by Flux. |
@@ -24,7 +25,7 @@ preflight checks before running it. It writes the kubeconfig to
 `~/.kube/configs/dev-cluster.yaml`.
 
 The dev FluxInstance syncs `clusters/dev/init-manifests/`. Its Flux
-Kustomizations reconcile `infrastructure/imported/`,
+Kustomizations reconcile `clusters/dev/imported/`,
 `infrastructure/components/`, `apps/`, and dev secrets. Apps depend on the
 two infrastructure roots; individual Flux Kustomizations can add their own
 dependencies. The imported root and its existing components disable pruning,
@@ -38,6 +39,16 @@ until storage, secrets, gateway and networking are ready. The existing gateway
 allowlist is not registered. See [homelab bootstrap](homelab-talos.md).
 Once enabled, shared roots affect both clusters; use cluster-specific
 selection or overlays for divergent settings.
+
+Both cluster imported roots build on `infrastructure/imported/`. Cilium shares
+its chart, release, network policy and common Helm values there; each cluster
+adds its own overrides from `infrastructure/imported/cilium/custom-values/<cluster>.yaml`.
+The shared ConfigMap contains both non-secret overrides, while each cluster's
+Cilium overlay in `infrastructure/imported/overlays/cilium/` selects only its
+own key. Dev uses the kind API endpoint, while
+homelab uses the operator-supplied API address and Talos-specific cgroup and
+capability settings. Both bootstraps apply common values first and their
+cluster overrides second, matching Flux.
 
 ## Network policies
 
@@ -70,6 +81,10 @@ Renovate also updates the Dragonfly operator's remote Kustomize manifest by its
 GitHub tag, without pinning it to a commit digest.
 Talos and Kubernetes bootstrap versions use release tags and require manual
 review and upgrades, not automerge; see [homelab bootstrap](homelab-talos.md).
+This is a risk-management choice, not a Renovate or Talos requirement. Talos
+and Kubernetes PRs change future bootstrap defaults, not running nodes; Cilium
+and Flux Operator chart PRs also change live Flux releases. Manual review helps
+check compatibility and plan recovery before those critical upgrades.
 
 The daily Renovate workflow requires a GitHub App installed on this repository
 with **Contents: Read and write** and **Pull requests: Read and write**

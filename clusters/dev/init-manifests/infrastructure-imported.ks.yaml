@@ -7,7 +7,7 @@ spec:
   interval: 1h
   retryInterval: 1m
   timeout: 50m
-  path: ./infrastructure/imported
+  path: ./clusters/dev/imported
   prune: false
   wait: true
   sourceRef:

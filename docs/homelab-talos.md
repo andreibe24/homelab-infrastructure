@@ -101,7 +101,11 @@ kubeconfig, installs Cilium with the same values used by Flux, and creates the
 Flux's Cilium Kustomization requires this ConfigMap for substitution; do not
 delete it. It and Cilium's Helm release are bootstrap state, not secrets.
 Flux uses the shared OCI chart tags and non-pruning adoption settings, but not
-the kind-specific `dev-control-plane` Cilium endpoint. Check both nodes become
+the kind-specific `dev-control-plane` Cilium endpoint. Common Cilium values
+come from `infrastructure/imported/cilium/custom.helmvalues.yaml`; the
+cluster-specific overrides live in
+`infrastructure/imported/cilium/custom-values/homelab.yaml` alongside
+`dev.yaml`. Check both nodes become
 Ready and that Cilium and Flux report healthy before proceeding.
 
 `generate` refuses an existing state directory; do not regenerate credentials

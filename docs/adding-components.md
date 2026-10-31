@@ -6,9 +6,10 @@ below are relative to the repository root.
 
 ## Choose the target clusters
 
-The dev entry point reconciles the shared `apps/`,
-`infrastructure/components/`, and `infrastructure/imported/` roots. Homelab
-adopts its own Cilium overlay and the shared Flux Operator; its shared apps and
+The dev entry point reconciles the shared `apps/` and
+`infrastructure/components/` roots and a cluster overlay of
+`infrastructure/imported/`. Homelab also uses its own imported overlay and the
+shared Flux Operator; its shared apps and
 infrastructure roots are suspended pending operator preparation. A registration
 in a shared root will also affect homelab when it reconciles that root. For cluster-specific
 components or configuration, use an explicit cluster-specific selection or
@@ -58,7 +59,11 @@ Operator; it is not the default location for ordinary Helm installs.
 
 1. Ensure the intended cluster's bootstrap installs the component before Flux
    adopts it, and coordinate chart versions and bootstrap Helm values with its
-   Flux resources. The homelab bootstrap and Cilium overlay differ from dev;
+   Flux resources. Cilium's common values live in its shared imported base;
+   each cluster's overrides live in
+   `infrastructure/imported/cilium/custom-values/<cluster>.yaml` and
+   are applied after the common values by both bootstrap and Flux. The
+   homelab bootstrap and Cilium override differ from dev;
    see [homelab-talos.md](homelab-talos.md).
 2. Create `infrastructure/imported/<name>/` with `<name>.ks.yaml`, a local
    `kustomization.yaml`, and separate source and HelmRelease manifests. Use the

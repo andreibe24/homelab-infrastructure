@@ -109,7 +109,9 @@ case "${1:-}" in
     kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/${GATEWAY_API_VERSION}/standard-install.yaml"
     helm upgrade --install cilium oci://quay.io/cilium/charts/cilium \
       --version "$CILIUM_VERSION" --namespace kube-system \
-      -f ../imported/cilium/custom.helmvalues --set-string "k8sServiceHost=$CONTROL_PLANE_IP" --wait --timeout 10m
+      -f ../../../infrastructure/imported/cilium/custom.helmvalues.yaml \
+      -f ../../../infrastructure/imported/cilium/custom-values/homelab.yaml \
+      --set-string "k8sServiceHost=$CONTROL_PLANE_IP" --wait --timeout 10m
     kubectl -n kube-system create configmap homelab-cilium-settings \
       --from-literal="HOMELAB_API_HOST=$CONTROL_PLANE_IP" --dry-run=client -o yaml | kubectl apply -f -
     kubectl create namespace flux-system --dry-run=client -o yaml | kubectl apply -f -

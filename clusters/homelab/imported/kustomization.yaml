@@ -12,7 +12,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/path
-        value: ./clusters/homelab/imported/cilium
+        value: ./infrastructure/imported/overlays/cilium/homelab
       - op: add
         path: /spec/postBuild
         value:
