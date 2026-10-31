@@ -20,6 +20,7 @@ Paths in the guides are relative to the repository root unless stated otherwise.
 ## Applications and components
 
 - [Campfire (Django + Vite)](apps/webapp-django-vite.md).
+- [Campfire source-code map](apps/webapp-django-vite-source.md).
 - [Agentgateway](components/agentgateway.md).
 - [Linkerd](components/linkerd.md).
 - [Monitoring](components/monitoring.md).
