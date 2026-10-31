@@ -11,3 +11,14 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering: ClassVar[list[str]] = ["created_at", "id"]
+
+
+class OIDCIdentity(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    issuer = models.CharField(max_length=255)
+    subject = models.CharField(max_length=255)
+
+    class Meta:
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(fields=["issuer", "subject"], name="oidc_issuer_subject")
+        ]

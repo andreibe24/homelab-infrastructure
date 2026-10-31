@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-backchannel
+spec:
+  secretName: keycloak-backchannel-tls
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - keycloak-service.keycloak.svc.cluster.local
+  issuerRef:
+    name: identity-ca
+    kind: Issuer

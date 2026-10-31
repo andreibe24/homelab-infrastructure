@@ -33,6 +33,12 @@
       "automerge": false
     },
     {
+      "description": "Review Keycloak operator and server upgrades together",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["keycloak/keycloak-k8s-resources"],
+      "automerge": false
+    },
+    {
       "description": "Review Cilium bootstrap and Flux adoption upgrades together",
       "matchPackageNames": ["quay.io/cilium/charts/cilium"],
       "groupName": "cilium chart",
@@ -137,6 +143,16 @@
     }
   ],
   "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update the pinned Keycloak operator bundle",
+      "managerFilePatterns": ["/^clusters\\/dev\\/identity\\/operator\\/kustomization\\.yaml$/"],
+      "matchStrings": [
+        "https://github\\.com/keycloak/keycloak-k8s-resources//kubernetes\\?ref=(?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "keycloak/keycloak-k8s-resources"
+    },
     {
       "customType": "regex",
       "description": "Update the Dragonfly operator's remote manifest tag",

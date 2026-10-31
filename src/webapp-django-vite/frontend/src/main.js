@@ -20,6 +20,7 @@ let loadingMessages = false;
 let toolsBusy = false;
 let lastMessages = "";
 let draft = "";
+let oidcEnabled = false;
 
 function showStatus(message) {
   status.textContent = message;
@@ -346,7 +347,9 @@ document.querySelector("#logout-button").addEventListener("click", async (event)
   try {
     await request("/api/logout/", { method: "POST" });
     setAnonymous();
-    showStatus("Signed out.");
+    showStatus(oidcEnabled
+      ? "Signed out of Campfire. Your Keycloak session may still be active."
+      : "Signed out.");
     await refreshCsrfToken();
   } catch (error) {
     showStatus(error.message);
@@ -357,10 +360,17 @@ document.querySelector("#logout-button").addEventListener("click", async (event)
 
 async function initialize() {
   try {
+    const config = await request("/api/auth-config/");
+    oidcEnabled = config.oidc;
+    authForm.hidden = oidcEnabled;
+    document.querySelector("#oidc-signin").hidden = !oidcEnabled;
     await refreshCsrfToken();
     const response = await fetch("/api/me/", { credentials: "same-origin" });
     if (response.status === 401) {
       setAnonymous();
+      if (new URLSearchParams(window.location.search).get("login") === "failed") {
+        showStatus("Central sign-in failed. Please try again.");
+      }
       return;
     }
     if (!response.ok) throw new Error("Could not load your session. Please reload.");
