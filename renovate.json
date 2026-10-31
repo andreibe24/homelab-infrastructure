@@ -105,6 +105,16 @@
   "customManagers": [
     {
       "customType": "regex",
+      "description": "Update the Dragonfly operator's remote manifest tag",
+      "managerFilePatterns": ["/^infrastructure\\/components\\/redis-operator\\/kustomization\\.yaml$/"],
+      "matchStrings": [
+        "https://raw\\.githubusercontent\\.com/dragonflydb/dragonfly-operator/(?<currentValue>[^/\\s]+)/manifests/dragonfly-operator\\.yaml"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "dragonflydb/dragonfly-operator"
+    },
+    {
+      "customType": "regex",
       "managerFilePatterns": ["/^(apps|clusters|infrastructure)\\/.*\\.sh$/"],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\s+[A-Z0-9_]+_VERSION=\"(?<currentValue>[^\"]+)\""
