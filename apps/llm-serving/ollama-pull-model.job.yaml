@@ -1,0 +1,36 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-pull-model
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      annotations:
+        linkerd.io/inject: disabled
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: pull
+          image: docker.io/ollama/ollama:0.12.9
+          env:
+            - name: OLLAMA_HOST
+              value: http://ollama:11434
+            - name: HOME
+              value: /tmp
+          command: ["ollama", "pull", "qwen2.5:0.5b"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

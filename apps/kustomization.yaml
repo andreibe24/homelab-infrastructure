@@ -8,6 +8,8 @@ resources:
   - ./sample-http3/sample-http3.ks.yaml
   - ./webapp-django-vite/webapp-django-vite.namespace.yaml
   - ./webapp-django-vite/webapp-django-vite.ks.yaml
+  - ./llm-serving/llm-serving.namespace.yaml
+  - ./llm-serving/llm-serving.ks.yaml
 patches:
   - target:
       version: v1
