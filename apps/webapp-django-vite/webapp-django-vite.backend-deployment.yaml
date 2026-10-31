@@ -21,7 +21,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: backend
-          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend:1.1.4
+          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend:1.1.5
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
