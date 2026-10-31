@@ -9,3 +9,4 @@ resources:
   - external.gateway.yaml
   - localhost-tls.certificate.yaml
   - http-to-https-redirect.httproute.yaml
+  - gateway.networkpolicy.yaml

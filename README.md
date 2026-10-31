@@ -14,11 +14,11 @@ pinning it to a commit digest.
 
 ## Network policies
 
-The application and infrastructure namespace Kustomizations install ingress
-policies alongside their namespace resources. Application pods accept traffic from their own
-namespace, the gateway and monitoring namespaces, and, for the database
-application, the PostgreSQL operator. Infrastructure pods accept ingress from
-cluster namespaces. These are namespace-level baselines, not per-port or
+Each application and infrastructure component Kustomization installs its
+namespace's ingress policy alongside its workloads. Application pods accept
+traffic from their own namespace, the gateway and monitoring namespaces, and,
+for the database application, the PostgreSQL operator. Infrastructure pods
+accept ingress from cluster namespaces. These are namespace-level baselines, not per-port or
 per-workload isolation; egress remains unrestricted except for the existing
 agentgateway rate-limiter and Dragonfly policies. Their pods are excluded from
 the broader agentgateway baseline because NetworkPolicies are additive.

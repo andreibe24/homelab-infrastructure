@@ -5,3 +5,4 @@ namespace: reloader
 resources:
   - reloader.ocirepository.yaml
   - reloader.helmrelease.yaml
+  - reloader.networkpolicy.yaml

@@ -6,3 +6,4 @@ resources:
   - ./linkerd.helmrepository.yaml
   - ./linkerd-crds.helmrelease.yaml
   - ./linkerd-control-plane.helmrelease.yaml
+  - ./linkerd.networkpolicy.yaml

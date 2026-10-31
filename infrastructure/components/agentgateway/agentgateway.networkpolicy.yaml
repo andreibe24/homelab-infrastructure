@@ -1,0 +1,17 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cluster-ingress
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: NotIn
+        values:
+          - agentgateway-ratelimit
+          - agentgateway-ratelimit-dragonfly
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {}

@@ -6,3 +6,4 @@ resources:
   - whoami.deployment.yaml
   - whoami.service.yaml
   - whoami.httproute.yaml
+  - whoami.networkpolicy.yaml

@@ -9,3 +9,4 @@ resources:
   - webapp-django-vite.frontend-deployment.yaml
   - webapp-django-vite.frontend-service.yaml
   - webapp-django-vite.httproute.yaml
+  - webapp-django-vite.networkpolicy.yaml

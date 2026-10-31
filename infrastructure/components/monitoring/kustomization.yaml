@@ -6,3 +6,4 @@ resources:
   - ./kube-prometheus-stack.ocirepository.yaml
   - ./kube-prometheus-stack.helmrelease.yaml
   - ./grafana.httproute.yaml
+  - ./monitoring.networkpolicy.yaml

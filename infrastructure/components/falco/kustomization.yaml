@@ -8,3 +8,4 @@ resources:
   - ./falcosidekick.ocirepository.yaml
   - ./falcosidekick-critical.helmrelease.yaml
   - ./falco-ui.httproute.yaml
+  - ./falco.networkpolicy.yaml

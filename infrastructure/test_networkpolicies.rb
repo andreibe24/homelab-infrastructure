@@ -20,13 +20,34 @@ apps = build(root, "apps", kustomize)
 components = build(root, "infrastructure/components", kustomize)
 imported = build(root, "infrastructure/imported/cilium", kustomize)
 ratelimit = build(root, "infrastructure/components/agentgateway-ratelimit", kustomize)
-policies = (apps + components + imported + ratelimit).select { |resource| resource["kind"] == "NetworkPolicy" }
 namespaces = (apps + components).select { |resource| resource["kind"] == "Namespace" }
 app_names = apps.select { |resource| resource["kind"] == "Namespace" }.map { |resource| resource.dig("metadata", "name") }
 component_names = components.select { |resource| resource["kind"] == "Namespace" }.map { |resource| resource.dig("metadata", "name") }
 
 assert(!app_names.empty? && !component_names.empty?, "Missing application or infrastructure namespaces")
 assert(namespaces.size == (app_names + component_names).uniq.size, "Duplicate namespaces")
+
+workloads = [
+  [apps, "apps", app_names],
+  [components, "infrastructure/components", component_names]
+].flat_map do |parent, directory, names|
+  names.flat_map do |namespace|
+    path = "#{directory}/#{namespace}"
+    assert(parent.any? { |resource| resource["kind"] == "Kustomization" &&
+      resource["apiVersion"] == "kustomize.toolkit.fluxcd.io/v1" &&
+      resource.dig("metadata", "namespace") == namespace &&
+      resource.dig("spec", "path") == "./#{path}" },
+           "Missing Flux reconciliation of #{path}")
+    resources = build(root, path, kustomize)
+    policy_name = directory == "apps" ? "application-ingress" : "cluster-ingress"
+    assert(resources.any? { |resource| resource["kind"] == "NetworkPolicy" &&
+      resource.dig("metadata", "namespace") == namespace &&
+      resource.dig("metadata", "name") == policy_name },
+           "Missing #{namespace} policy from #{path}")
+    resources
+  end
+end
+policies = (workloads + imported + ratelimit).select { |resource| resource["kind"] == "NetworkPolicy" }
 
 app_names.each do |namespace|
   policy = policies.find { |item| item.dig("metadata", "namespace") == namespace && item.dig("metadata", "name") == "application-ingress" }

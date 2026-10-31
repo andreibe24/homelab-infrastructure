@@ -7,3 +7,4 @@ resources:
   - sample-http3.deployment.yaml
   - sample-http3.service.yaml
   - sample-http3.httproute.yaml
+  - sample-http3.networkpolicy.yaml

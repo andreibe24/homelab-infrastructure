@@ -13,4 +13,4 @@ generatorOptions:
 resources:
   - cilium.ocirepository.yaml
   - cilium.helmrelease.yaml
-  - networkpolicy.yaml
+  - cilium.networkpolicy.yaml
