@@ -26,7 +26,7 @@ namespaces = (components + apps).select { |resource| resource["kind"] == "Namesp
 namespaces.each do |namespace|
   name = namespace.dig("metadata", "name")
   injection = namespace.dig("metadata", "annotations", "linkerd.io/inject")
-  expected = %w[cert-manager linkerd].include?(name) ? nil : "enabled"
+  expected = %w[cert-manager linkerd keda metrics-server].include?(name) ? nil : "enabled"
   assert(injection == expected, "Unexpected injection setting for namespace #{name}")
 end
 assert(namespaces.size >= 5, "Namespace coverage is incomplete")

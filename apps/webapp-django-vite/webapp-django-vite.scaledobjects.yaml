@@ -1,0 +1,84 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: webapp-django-vite-backend
+spec:
+  scaleTargetRef:
+    name: webapp-django-vite-backend
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "75"
+        containerName: backend
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
+        containerName: backend
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: webapp-django-vite-frontend
+spec:
+  scaleTargetRef:
+    name: webapp-django-vite-frontend
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "75"
+        containerName: frontend
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
+        containerName: frontend
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: webapp-django-vite-mcp
+spec:
+  scaleTargetRef:
+    name: webapp-django-vite-mcp
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "75"
+        containerName: mcp
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
+        containerName: mcp
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: webapp-django-vite-rag
+spec:
+  scaleTargetRef:
+    name: webapp-django-vite-rag
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "75"
+        containerName: rag
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
+        containerName: rag

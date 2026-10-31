@@ -378,3 +378,14 @@ class McpTests(TransactionTestCase):
             "campfire-operator",
         )
         self.assertIsNone(async_to_sync(verifier.verify_token)("wrong-token"))
+
+
+class PrimaryReplicaRouterTests(SimpleTestCase):
+    def test_reads_use_replica_and_writes_use_primary(self):
+        from config.db_router import PrimaryReplicaRouter
+
+        router = PrimaryReplicaRouter()
+        self.assertEqual(router.db_for_read(ChatMessage), "replica")
+        self.assertEqual(router.db_for_write(ChatMessage), "default")
+        self.assertTrue(router.allow_migrate("default", "chat"))
+        self.assertFalse(router.allow_migrate("replica", "chat"))

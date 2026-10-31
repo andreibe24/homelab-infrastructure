@@ -8,3 +8,4 @@ resources:
   - sample-http3.service.yaml
   - sample-http3.httproute.yaml
   - sample-http3.networkpolicy.yaml
+  - sample-http3.scaledobject.yaml

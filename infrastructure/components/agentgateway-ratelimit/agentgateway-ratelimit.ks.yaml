@@ -6,6 +6,8 @@ metadata:
   namespace: agentgateway
 spec:
   dependsOn:
+    - name: keda
+      namespace: keda
     - name: reloader
       namespace: reloader
     - name: dragonfly-operator

@@ -140,6 +140,7 @@ spec:
 
     # Falcosidekick alert routing and Web UI
     falcosidekick:
+      replicaCount: 2
       enabled: true
       podAnnotations:
         reloader.stakater.com/auto: "true"

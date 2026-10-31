@@ -7,4 +7,5 @@ resources:
   - ./agentgateway-crds.helmrelease.yaml
   - ./agentgateway.ocirepository.yaml
   - ./agentgateway.helmrelease.yaml
+  - ./agentgateway.scaledobject.yaml
   - ./agentgateway.networkpolicy.yaml

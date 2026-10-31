@@ -6,6 +6,8 @@ metadata:
   namespace: webapp-django-vite
 spec:
   dependsOn:
+    - name: keda
+      namespace: keda
     - name: cloudnative-pg
       namespace: postgres-operator
     - name: agentgateway-config

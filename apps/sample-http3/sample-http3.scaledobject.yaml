@@ -1,0 +1,21 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: sample-http3
+spec:
+  scaleTargetRef:
+    name: sample-http3
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "75"
+        containerName: caddy
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
+        containerName: caddy

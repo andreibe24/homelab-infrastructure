@@ -5,6 +5,7 @@ namespace: redis-operator
 resources:
   - https://raw.githubusercontent.com/dragonflydb/dragonfly-operator/v1.7.1/manifests/dragonfly-operator.yaml
   - redis-operator.networkpolicy.yaml
+  - dragonfly-operator.scaledobject.yaml
 patches:
   - target:
       version: v1

@@ -17,6 +17,7 @@ spec:
     remediation:
       retries: 3
   values:
+    replicaCount: 2
     fullnameOverride: falcosidekick-critical
     podAnnotations:
       reloader.stakater.com/auto: "true"

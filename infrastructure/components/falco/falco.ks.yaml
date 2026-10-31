@@ -6,6 +6,8 @@ metadata:
   namespace: falco
 spec:
   dependsOn:
+    - name: keda
+      namespace: keda
     - name: gateway
       namespace: gateway
     - name: reflector

@@ -6,7 +6,6 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: sample-http3
@@ -38,6 +37,12 @@ spec:
           readinessProbe:
             tcpSocket:
               port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
           volumeMounts:
             - name: config
               mountPath: /etc/caddy/Caddyfile

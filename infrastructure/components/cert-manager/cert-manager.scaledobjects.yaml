@@ -1,0 +1,57 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cert-manager
+spec:
+  scaleTargetRef:
+    name: cert-manager
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: AverageValue
+      metadata:
+        value: 500m
+    - type: memory
+      metricType: AverageValue
+      metadata:
+        value: 256Mi
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cert-manager-cainjector
+spec:
+  scaleTargetRef:
+    name: cert-manager-cainjector
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: AverageValue
+      metadata:
+        value: 500m
+    - type: memory
+      metricType: AverageValue
+      metadata:
+        value: 256Mi
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cert-manager-webhook
+spec:
+  scaleTargetRef:
+    name: cert-manager-webhook
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: AverageValue
+      metadata:
+        value: 500m
+    - type: memory
+      metricType: AverageValue
+      metadata:
+        value: 256Mi

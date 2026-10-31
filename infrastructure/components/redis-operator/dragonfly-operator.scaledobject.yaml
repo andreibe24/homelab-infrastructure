@@ -1,0 +1,19 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: dragonfly-operator-controller-manager
+spec:
+  scaleTargetRef:
+    name: dragonfly-operator-controller-manager
+  minReplicaCount: 2
+  maxReplicaCount: 5
+  triggers:
+    - type: cpu
+      metricType: AverageValue
+      metadata:
+        value: 500m
+    - type: memory
+      metricType: AverageValue
+      metadata:
+        value: 256Mi

@@ -6,6 +6,8 @@ metadata:
   namespace: envoy-gateway
 spec:
   dependsOn:
+    - name: keda
+      namespace: keda
     - name: envoy-gateway-crds
     - name: linkerd
       namespace: linkerd

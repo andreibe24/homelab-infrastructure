@@ -8,3 +8,4 @@ resources:
   - whoami.httproute.yaml
   - whoami.networkpolicy.yaml
   - whoami.linkerd-policy.yaml
+  - whoami.scaledobject.yaml

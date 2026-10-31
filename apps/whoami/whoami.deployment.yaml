@@ -4,7 +4,6 @@ kind: Deployment
 metadata:
   name: whoami
 spec:
-  replicas: 1
   selector:
     matchLabels: { app: whoami }
   template:
@@ -16,3 +15,9 @@ spec:
           image: traefik/whoami:latest@sha256:c4717a8d1f0134a7444e24f881160e033991f23027c6c5a9a3f8fd22e70d1d44
           ports:
             - containerPort: 80
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
