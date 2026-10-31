@@ -2,7 +2,7 @@
 
 The agentgateway CRDs and controller are installed with the upstream Helm charts.
 Flux waits for the CRDs and controller before applying the resources in
-`../agentgateway-config/`.
+`infrastructure/components/agentgateway-config/`.
 The existing Envoy HTTPS gateway forwards `agentgateway.localhost/v1` to an
 agentgateway-managed ClusterIP proxy. Use the same HTTPS port and local CA trust
 as the other `*.localhost` applications.
@@ -259,7 +259,7 @@ stringData:
 
 `client_id` is read from the authenticated Secret entry, not a caller-supplied
 header. Authentication, authorization, rate limits, and guardrails are kept in
-`../agentgateway-config/agentgateway-client-auth.policy.yaml` to avoid overlapping
+`infrastructure/components/agentgateway-config/agentgateway-client-auth.policy.yaml` to avoid overlapping
 policies overwriting one another.
 
 | Control | forum-app setting |
@@ -292,7 +292,7 @@ moderation, or prompt-injection protection; false positives and evasions are
 possible. Emails and phone numbers are not blocked by these rules.
 Request bodies are buffered up to 1MiB; larger bodies are rejected with 413.
 
-The separate `../agentgateway-ratelimit/` component runs the Envoy rate-limit
+The separate `infrastructure/components/agentgateway-ratelimit/` component runs the Envoy rate-limit
 service and an operator-managed Dragonfly instance using the Redis protocol.
 Dragonfly uses a 1Gi persistent volume from the cluster's default StorageClass,
 snapshots every minute, and no cache-mode eviction. This is not Redis AOF:
@@ -364,7 +364,7 @@ Kubernetes reconciliation, NetworkPolicy enforcement, or Copilot credentials.
 
 4. Explicitly allow the new `client_id` and its models in the authorization policy,
    and add its `client_requests` and `client_tokens` quotas to
-   `../agentgateway-ratelimit/agentgateway-ratelimit.configmap.yaml`. New client IDs
+   `infrastructure/components/agentgateway-ratelimit/agentgateway-ratelimit.configmap.yaml`. New client IDs
    are denied by default; adding a Secret entry alone does not grant access.
 
 5. Commit and push the encrypted file and policy changes. Flux decrypts it, Reflector copies it into
