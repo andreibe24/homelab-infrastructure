@@ -2,7 +2,11 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import close_old_connections
-from mcp.server.fastmcp import FastMCP
+
+try:
+    from mcp.server.mcpserver import MCPServer
+except ImportError:
+    from mcp.server.fastmcp import FastMCP as MCPServer
 
 from chat import tools
 
@@ -17,7 +21,7 @@ def call_forum_tool(name, arguments):
 
 
 def create_server():
-    server = FastMCP("Campfire forum")
+    server = MCPServer("Campfire forum")
 
     @server.tool()
     async def recent_messages() -> dict:
