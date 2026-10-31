@@ -8,3 +8,14 @@ resources:
   - ./sample-http3/sample-http3.ks.yaml
   - ./webapp-django-vite/webapp-django-vite.namespace.yaml
   - ./webapp-django-vite/webapp-django-vite.ks.yaml
+patches:
+  - target:
+      version: v1
+      kind: Namespace
+    patch: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ignored
+        annotations:
+          linkerd.io/inject: enabled

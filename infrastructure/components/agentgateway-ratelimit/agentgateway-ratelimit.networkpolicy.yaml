@@ -20,7 +20,7 @@ spec:
         - port: 8081
           protocol: TCP
   egress:
-    # The limiter needs only its Dragonfly counter store and cluster DNS.
+    # The limiter needs its Dragonfly counter store, DNS, and Linkerd.
     - to:
         - podSelector:
             matchLabels:
@@ -36,4 +36,26 @@ spec:
         - port: 53
           protocol: UDP
         - port: 53
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: linkerd
+          podSelector:
+            matchLabels:
+              linkerd.io/control-plane-component: identity
+      ports:
+        - port: 8080
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: linkerd
+          podSelector:
+            matchLabels:
+              linkerd.io/control-plane-component: destination
+      ports:
+        - port: 8086
+          protocol: TCP
+        - port: 8090
           protocol: TCP

@@ -44,3 +44,6 @@ jobs:
 
           kubectl kustomize infrastructure/components/redis-operator |
             kubeconform -strict -ignore-missing-schemas -summary
+
+      - name: Check Linkerd manifests
+        run: ruby infrastructure/components/linkerd/test_manifests.rb
