@@ -26,6 +26,11 @@ point; this file is the root agent-instruction entry point.
   in separate `*.ocirepository.yaml`, `*.helmrelease.yaml`, and `*.ks.yaml`
   files. Keep OCI chart tags tag-based; image digest pinning is handled by
   Renovate. Follow existing resource-specific naming and local exceptions.
+- When creating a pull request, use a Conventional Commit title:
+  `<type>(<optional-scope>): <description>`, for example `docs: organize guides`
+  or `feat(webapp): add search`. Add `!` before the colon for breaking changes.
+  Choose the type that describes the change; squash-merged titles affect
+  application versioning.
 - Validate changed Kustomizations and relevant checks in
   `.github/workflows/lint-infrastructure.yaml`; account for remote dependencies
   and explicitly report checks that cannot be run.
