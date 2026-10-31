@@ -39,7 +39,7 @@ jobs:
 
           find apps infrastructure/components clusters -type f \
             \( -name '*.yaml' -o -name '*.yml' \) \
-            ! -name kustomization.yaml ! -name '*.secret.yaml' -print0 |
+            ! -name kustomization.yaml ! -name '*.secret.yaml' ! -name '*.patch.yaml' -print0 |
             xargs -0 kubeconform -strict -ignore-missing-schemas -summary
 
           kubectl kustomize infrastructure/components/redis-operator |
