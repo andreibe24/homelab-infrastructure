@@ -2,10 +2,10 @@
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: reloader
+  name: reloader-reloader
 spec:
   scaleTargetRef:
-    name: reloader
+    name: reloader-reloader
   minReplicaCount: 2
   maxReplicaCount: 5
   triggers:
