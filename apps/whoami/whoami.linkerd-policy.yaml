@@ -1,0 +1,36 @@
+---
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata:
+  name: whoami-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: whoami
+  port: 80
+  proxyProtocol: HTTP/1
+---
+# The external Envoy gateway uses the host network and is not meshed, so its
+# plaintext ingress is allowed on this routed port only; other ports require mTLS.
+apiVersion: policy.linkerd.io/v1alpha1
+kind: NetworkAuthentication
+metadata:
+  name: gateway-plaintext
+spec:
+  networks:
+    - cidr: 0.0.0.0/0
+    - cidr: ::/0
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: whoami-gateway
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: whoami-gateway
+  requiredAuthenticationRefs:
+    - group: policy.linkerd.io
+      kind: NetworkAuthentication
+      name: gateway-plaintext

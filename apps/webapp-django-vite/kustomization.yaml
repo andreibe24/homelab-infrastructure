@@ -15,3 +15,4 @@ resources:
   - webapp-django-vite.rag-service.yaml
   - webapp-django-vite.httproute.yaml
   - webapp-django-vite.networkpolicy.yaml
+  - webapp-django-vite.linkerd-policy.yaml

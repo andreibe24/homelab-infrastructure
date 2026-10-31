@@ -7,3 +7,4 @@ resources:
   - whoami.service.yaml
   - whoami.httproute.yaml
   - whoami.networkpolicy.yaml
+  - whoami.linkerd-policy.yaml

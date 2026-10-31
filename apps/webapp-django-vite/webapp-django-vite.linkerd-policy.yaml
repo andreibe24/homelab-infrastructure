@@ -1,0 +1,64 @@
+---
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata:
+  name: webapp-django-vite-frontend-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app: webapp-django-vite-frontend
+  port: 8080
+  proxyProtocol: HTTP/1
+---
+# The external Envoy gateway uses the host network and is not meshed, so its
+# plaintext ingress is allowed on this routed port only; other ports require mTLS.
+apiVersion: policy.linkerd.io/v1alpha1
+kind: NetworkAuthentication
+metadata:
+  name: gateway-plaintext
+spec:
+  networks:
+    - cidr: 0.0.0.0/0
+    - cidr: ::/0
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: webapp-django-vite-frontend-gateway
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: webapp-django-vite-frontend-gateway
+  requiredAuthenticationRefs:
+    - group: policy.linkerd.io
+      kind: NetworkAuthentication
+      name: gateway-plaintext
+---
+# CloudNativePG serves its instance manager over HTTPS on 8000. The kubelet
+# probes it directly and Linkerd cannot auto-authorize HTTPS probes, so allow
+# the port; the traffic stays TLS-encrypted by CNPG itself.
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata:
+  name: cnpg-instance-manager
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/podRole: instance
+  port: 8000
+  proxyProtocol: TLS
+---
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata:
+  name: cnpg-instance-manager
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: cnpg-instance-manager
+  requiredAuthenticationRefs:
+    - group: policy.linkerd.io
+      kind: NetworkAuthentication
+      name: gateway-plaintext

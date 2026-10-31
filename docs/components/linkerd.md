@@ -55,6 +55,34 @@ Repeat the proxy check for the other opted-in infrastructure namespaces and
 inspect any skipped or unmeshed pods. A successful control-plane check alone
 does not establish that all workloads are meshed.
 
+## mTLS enforcement
+
+The `whoami` and `webapp-django-vite` namespaces set
+`config.linkerd.io/default-inbound-policy: all-authenticated` on the Namespace,
+so their proxies refuse connections that lack a mesh identity. The annotation
+is read when a pod starts; restart existing pods after adding it (for
+CloudNativePG use `kubectl.kubernetes.io/restartedAt` on the `Cluster`).
+
+Exceptions are explicit `Server` and `AuthorizationPolicy` pairs in each
+`*.linkerd-policy.yaml`:
+
+- The external Envoy gateway uses the host network and is not meshed, so only
+  the routed port (`whoami:80`, `frontend:8080`) accepts plaintext.
+  NetworkPolicies still limit who can reach it.
+- CloudNativePG probes its HTTPS instance manager on port 8000 from the
+  kubelet; that port is allowed because CNPG encrypts it itself.
+
+Verify from an unmeshed and a meshed pod in the namespace:
+
+```sh
+kubectl -n whoami run plain --image=curlimages/curl --annotations=linkerd.io/inject=disabled -- sleep 900
+kubectl -n webapp-django-vite exec plain -- curl -s -o /dev/null -w '%{http_code}\n' http://webapp-django-vite-rag:8080/   # 403
+```
+
+The same request from a meshed pod reaches the application. Denials appear in
+the target proxy log as `Connection denied ... server.name=all-authenticated`.
+Add other namespaces only after checking their unmeshed callers.
+
 ## Identity certificates
 
 cert-manager creates a dedicated ECDSA trust anchor and a short-lived identity
