@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-frontend:1.1.8@sha256:c620cb2e9245766b47c8968899f214fd34e5d4de80c2667bc532018df79ace2b
+          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-frontend:1.2.0@sha256:e5519fc7d677b74a38cd651cf0b84558787aa163700e050b5e3a96a54d7e9f53
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
