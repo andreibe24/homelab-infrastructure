@@ -34,6 +34,8 @@ resources:
   - ./postgres-operator/cloudnative-pg.kustomization.yaml
   - ./redis-operator/redis-operator.namespace.yaml
   - ./redis-operator/dragonfly-operator.kustomization.yaml
+  - ./rabbitmq/rabbitmq.namespace.yaml
+  - ./rabbitmq/rabbitmq.ks.yaml
 patches:
   - target:
       version: v1

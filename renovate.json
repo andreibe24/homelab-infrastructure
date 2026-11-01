@@ -89,6 +89,18 @@
       "automerge": false
     },
     {
+      "description": "Update RabbitMQ cluster operator manifest and image together",
+      "matchPackageNames": ["rabbitmq/cluster-operator", "ghcr.io/rabbitmq/cluster-operator"],
+      "groupName": "rabbitmq cluster operator",
+      "automerge": false
+    },
+    {
+      "description": "Update RabbitMQ topology operator manifest and image together",
+      "matchPackageNames": ["rabbitmq/messaging-topology-operator", "ghcr.io/rabbitmq/messaging-topology-operator"],
+      "groupName": "rabbitmq topology operator",
+      "automerge": false
+    },
+    {
       "description": "Update forum images together using plain X.Y.Z release image tags",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
@@ -137,6 +149,44 @@
     }
   ],
   "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update the messaging lab Dragonfly image in its custom resource",
+      "managerFilePatterns": ["/^apps\\/messaging-lab\\/messaging-lab-dragonfly\\.dragonfly\\.yaml$/"],
+      "matchStrings": [
+        "image: (?<depName>docker\\.dragonflydb\\.io/dragonflydb/dragonfly):(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the pinned RabbitMQ broker image in its custom resource",
+      "managerFilePatterns": ["/^infrastructure\\/components\\/rabbitmq\\/rabbitmq\\.rabbitmqcluster\\.yaml$/"],
+      "matchStrings": [
+        "image: (?<depName>rabbitmq):(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the RabbitMQ cluster operator release manifest",
+      "managerFilePatterns": ["/^infrastructure\\/components\\/rabbitmq\\/cluster-operator\\/kustomization\\.yaml$/"],
+      "matchStrings": [
+        "https://github\\.com/rabbitmq/cluster-operator/releases/download/(?<currentValue>[^/\\s]+)/cluster-operator\\.yml"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "rabbitmq/cluster-operator"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the RabbitMQ topology operator release manifest",
+      "managerFilePatterns": ["/^infrastructure\\/components\\/rabbitmq\\/topology-operator\\/kustomization\\.yaml$/"],
+      "matchStrings": [
+        "https://github\\.com/rabbitmq/messaging-topology-operator/releases/download/(?<currentValue>[^/\\s]+)/messaging-topology-operator-with-certmanager\\.yaml"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "rabbitmq/messaging-topology-operator"
+    },
     {
       "customType": "regex",
       "description": "Update the Dragonfly operator's remote manifest tag",

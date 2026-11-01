@@ -57,9 +57,12 @@ policies alongside workloads. Application pods accept traffic from their own
 namespace, the gateway and monitoring namespaces, and, for the database
 application, the PostgreSQL operator. Infrastructure pods accept ingress from
 cluster namespaces. These are namespace-level baselines, not per-port or
-per-workload isolation; egress remains unrestricted except for the existing
-agentgateway rate-limiter and Dragonfly policies. Their pods are excluded from
-the broader agentgateway baseline because NetworkPolicies are additive.
+per-workload isolation. The messaging lab and its Dragonfly instance use
+restricted per-port policies; RabbitMQ broker pods are excluded from their
+namespace's broader baseline. Egress is also restricted for these workloads
+and for the agentgateway rate-limiter and its Dragonfly instance. Their pods
+are excluded from the broader agentgateway baseline because NetworkPolicies are
+additive.
 Flux's bootstrap configuration enables its own generated policies; no broader
 policy is added to `flux-system`.
 

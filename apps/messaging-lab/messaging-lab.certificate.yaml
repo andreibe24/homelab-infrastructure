@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: messaging-lab-dragonfly
+spec:
+  secretName: messaging-lab-dragonfly-tls
+  dnsNames:
+    - messaging-lab-dragonfly.messaging-lab.svc
+    - messaging-lab-dragonfly.messaging-lab.svc.cluster.local
+  issuerRef:
+    name: root-ca-issuer
+    kind: ClusterIssuer

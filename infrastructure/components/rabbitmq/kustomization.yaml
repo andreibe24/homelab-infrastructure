@@ -1,0 +1,98 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rabbitmq
+resources:
+  - cluster-operator
+  - topology-operator
+  - rabbitmq.certificate.yaml
+  - rabbitmq.rabbitmqcluster.yaml
+  - rabbitmq.networkpolicy.yaml
+  - rabbitmq.ciliumnetworkpolicy.yaml
+images:
+  - name: ghcr.io/rabbitmq/cluster-operator
+    newTag: 2.23.2
+    digest: sha256:820447d180185ad0a37da04a2668440ad56149f226d25f7aea9cb648d6fcfc57
+  - name: ghcr.io/rabbitmq/messaging-topology-operator
+    newTag: 1.20.5
+    digest: sha256:71f12676c3de569da893cfae0f5094e89b9665d938d17a2491891d481989c083
+patches:
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: cluster-operator-serving-cert
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames
+        value:
+          - cluster-operator-webhook-service.rabbitmq.svc
+          - cluster-operator-webhook-service.rabbitmq.svc.cluster.local
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: messaging-topology-serving-cert
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames
+        value:
+          - messaging-topology-webhook-service.rabbitmq.svc
+          - messaging-topology-webhook-service.rabbitmq.svc.cluster.local
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: metrics-certs
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames
+        value:
+          - rabbitmq-cluster-operator-metrics-service.rabbitmq.svc
+          - rabbitmq-cluster-operator-metrics-service.rabbitmq.svc.cluster.local
+  - target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: messaging-topology-metrics-certs
+    patch: |-
+      - op: replace
+        path: /spec/dnsNames
+        value:
+          - messaging-topology-controller-metrics-service.rabbitmq.svc
+          - messaging-topology-controller-metrics-service.rabbitmq.svc.cluster.local
+  - target:
+      group: admissionregistration.k8s.io
+      version: v1
+      kind: MutatingWebhookConfiguration
+      name: cluster-operator-mutating-webhook-configuration
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1inject-ca-from
+        value: rabbitmq/cluster-operator-serving-cert
+  - target:
+      group: admissionregistration.k8s.io
+      version: v1
+      kind: ValidatingWebhookConfiguration
+      name: cluster-operator-validating-webhook-configuration
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1inject-ca-from
+        value: rabbitmq/cluster-operator-serving-cert
+  - target:
+      group: admissionregistration.k8s.io
+      version: v1
+      kind: MutatingWebhookConfiguration
+      name: messaging-topology-mutating-webhook-configuration
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1inject-ca-from
+        value: rabbitmq/messaging-topology-serving-cert
+  - target:
+      group: admissionregistration.k8s.io
+      version: v1
+      kind: ValidatingWebhookConfiguration
+      name: messaging-topology-validating-webhook-configuration
+    patch: |-
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1inject-ca-from
+        value: rabbitmq/messaging-topology-serving-cert
