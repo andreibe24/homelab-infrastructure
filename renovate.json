@@ -29,20 +29,17 @@
     {
       "description": "Review Talos and Kubernetes compatibility and upgrade steps manually",
       "matchManagers": ["custom.regex"],
-      "matchDepNames": ["siderolabs/talos", "kubernetes/kubernetes"],
-      "automerge": false
+      "matchDepNames": ["siderolabs/talos", "kubernetes/kubernetes"]
     },
     {
       "description": "Review Cilium bootstrap and Flux adoption upgrades together",
       "matchPackageNames": ["quay.io/cilium/charts/cilium"],
-      "groupName": "cilium chart",
-      "automerge": false
+      "groupName": "cilium chart"
     },
     {
       "description": "Review Flux Operator bootstrap and adoption upgrades together",
       "matchPackageNames": ["ghcr.io/controlplaneio-fluxcd/charts/flux-operator"],
-      "groupName": "flux operator chart",
-      "automerge": false
+      "groupName": "flux operator chart"
     },
     {
       "description": "Keep Flux OCI sources tag-based unless explicitly enabled for image values",
@@ -85,8 +82,7 @@
       "description": "Upgrade Linkerd CRDs and control plane together",
       "matchManagers": ["flux"],
       "matchFileNames": ["infrastructure/components/linkerd/*.helmrelease.yaml"],
-      "groupName": "linkerd charts",
-      "automerge": false
+      "groupName": "linkerd charts"
     },
     {
       "description": "Update forum images together using plain X.Y.Z release image tags",
