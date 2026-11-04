@@ -1,7 +1,6 @@
 My Todo List:
 
-# Security
-## cilium -> network policies
+# PR: what changes are when a helm chart upgrade is introduces 
 
 # whilist: who is allowed to access apps (k8s) externally
 
@@ -41,22 +40,3 @@ What they CANNOT do with just this key (.credentials):
 - Cannot access other repos/orgs — scoped strictly to whatever repo/org this specific runner was registered against
 - Cannot see past job history or secrets from jobs that already ran — only what's exposed in jobs it actually picks up going forward
 
-## build 
-
-buildkit or kaniko for multi-arch, maybe somthing docker-bake style?) and push artifacts
-
-## linting
-
-## testing
-
-## webapp with http/3 (quic -> udp) + website (frontend):
-- django backend with aioquic and Hypercorn
-- vite build with nginx frontend
-
-# Observability
-
-## prometheus metrics
-## grafana dashboard
-## alertmanager
-
-notify incidents, k8s cronjob poller fails, etc. 
