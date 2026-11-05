@@ -2,6 +2,8 @@ My Todo List:
 
 # PR: what changes are when a helm chart upgrade is introduces 
 
+# agent to agent protocol 
+
 # whilist: who is allowed to access apps (k8s) externally
 
 # mutual TLS -> Linkerd 
