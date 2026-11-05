@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messaging-lab
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: messaging-lab
+  template:
+    metadata:
+      labels:
+        app: messaging-lab
+      annotations:
+        linkerd.io/inject: disabled
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: lab
+          image: ghcr.io/andreibe24/homelab-infrastructure/messaging-lab:main
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          env:
+            - name: REDIS_HOST
+              value: messaging-lab-dragonfly.messaging-lab.svc
+            - name: REDIS_PASSWORD_FILE
+              value: /var/run/lab/redis/password
+            - name: REDIS_CA_FILE
+              value: /var/run/lab/ca/ca.crt
+            - name: RABBITMQ_HOST
+              value: rabbitmq.rabbitmq.svc
+            - name: RABBITMQ_VHOST
+              value: messaging-lab
+            - name: RABBITMQ_USERNAME_FILE
+              value: /var/run/lab/rabbitmq/username
+            - name: RABBITMQ_PASSWORD_FILE
+              value: /var/run/lab/rabbitmq/password
+            - name: AMQP_CA_FILE
+              value: /var/run/lab/ca/ca.crt
+          volumeMounts:
+            - name: redis-credentials
+              mountPath: /var/run/lab/redis
+              readOnly: true
+            - name: rabbitmq-credentials
+              mountPath: /var/run/lab/rabbitmq
+              readOnly: true
+            - name: ca
+              mountPath: /var/run/lab/ca
+              readOnly: true
+          readinessProbe:
+            exec:
+              command: [python, /app/lab.py, check]
+            periodSeconds: 30
+            timeoutSeconds: 30
+            failureThreshold: 2
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+      volumes:
+        - name: redis-credentials
+          secret:
+            secretName: messaging-lab-dragonfly
+        - name: rabbitmq-credentials
+          secret:
+            secretName: messaging-lab-user-credentials
+        - name: ca
+          secret:
+            secretName: messaging-lab-dragonfly-tls
+            items:
+              - key: ca.crt
+                path: ca.crt

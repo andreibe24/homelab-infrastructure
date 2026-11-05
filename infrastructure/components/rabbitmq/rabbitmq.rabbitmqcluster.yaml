@@ -1,0 +1,35 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq
+  annotations:
+    rabbitmq.com/topology-allowed-namespaces: messaging-lab
+spec:
+  replicas: 1
+  image: rabbitmq:4.3.4-management@sha256:eb5295d083325da5929a5ade766684d4019ffd2bce8bc7e43d6f9a05cafc8646
+  persistence:
+    storage: 2Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      memory: 1Gi
+  tls:
+    secretName: rabbitmq-server-tls
+    disableNonTLSListeners: true
+  override:
+    statefulSet:
+      spec:
+        template:
+          metadata:
+            annotations:
+              linkerd.io/inject: disabled
+          spec:
+            containers:
+              - name: rabbitmq
+                env:
+                  - name: RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS
+                    value: "+S 2:2 +A 4"
+                  - name: RABBITMQ_CTL_ERL_ARGS
+                    value: "+S 2:2 +A 4"

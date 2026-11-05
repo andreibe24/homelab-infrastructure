@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.20.5/messaging-topology-operator-with-certmanager.yaml
+patches:
+  - target:
+      version: v1
+      kind: Namespace
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ignored
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: messaging-topology-operator
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: messaging-topology-operator
+      spec:
+        template:
+          metadata:
+            annotations:
+              linkerd.io/inject: disabled
+          spec:
+            containers:
+              - name: manager
+                volumeMounts:
+                  - name: broker-ca
+                    mountPath: /etc/ssl/certs/homelab-rabbitmq-ca.crt
+                    subPath: ca.crt
+                    readOnly: true
+            volumes:
+              - name: broker-ca
+                secret:
+                  secretName: rabbitmq-server-tls
+                  items:
+                    - key: ca.crt
+                      path: ca.crt

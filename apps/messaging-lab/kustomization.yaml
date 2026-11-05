@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: messaging-lab
+resources:
+  - messaging-lab.certificate.yaml
+  - messaging-lab-dragonfly.dragonfly.yaml
+  - messaging-lab.topology.yaml
+  - messaging-lab.deployment.yaml
+  - messaging-lab.networkpolicy.yaml
