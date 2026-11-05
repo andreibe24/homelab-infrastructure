@@ -10,6 +10,8 @@ spec:
       namespace: keda
     - name: gateway
       namespace: gateway
+    - name: monitoring
+      namespace: monitoring
   interval: 1h
   retryInterval: 1m
   timeout: 10m

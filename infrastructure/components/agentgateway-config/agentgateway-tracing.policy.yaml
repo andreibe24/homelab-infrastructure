@@ -1,0 +1,20 @@
+---
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: agentgateway-tracing
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: agentgateway-proxy
+  frontend:
+    tracing:
+      # The collector adds Langfuse credentials and forwards over OTLP/HTTP.
+      backendRef:
+        kind: Service
+        name: langfuse-otel-collector
+        namespace: langfuse
+        port: 4317
+      protocol: GRPC
+      randomSampling: "true"

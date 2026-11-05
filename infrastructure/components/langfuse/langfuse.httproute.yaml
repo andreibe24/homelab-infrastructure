@@ -1,0 +1,16 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: langfuse
+spec:
+  parentRefs:
+    - name: external
+      namespace: gateway
+      sectionName: https-wildcard
+  hostnames:
+    - langfuse.localhost
+  rules:
+    - backendRefs:
+        - name: langfuse-web
+          port: 3000
