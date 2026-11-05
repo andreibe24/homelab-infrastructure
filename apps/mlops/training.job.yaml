@@ -1,0 +1,45 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlops-training-initial
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 1200
+  template:
+    metadata:
+      annotations:
+        linkerd.io/inject: disabled
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: training
+          image: ghcr.io/mlflow/mlflow:v3.5.1@sha256:7a8c21cd553b84227391ad7daa39c029dab64328da7607c372370cfa07ef43d9
+          command: ["python", "/training/train.py"]
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: http://mlflow:5000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: training
+              mountPath: /training
+              readOnly: true
+      volumes:
+        - name: training
+          configMap:
+            name: mlops-training
