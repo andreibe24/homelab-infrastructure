@@ -16,7 +16,7 @@ spec:
     spec:
       initContainers:
         - name: generate-download
-          image: caddy:2-alpine@sha256:ae5e525ca6773b0a4ce579c774cb39b3147e1576084139229517bdbcfe3ed812
+          image: caddy:2-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
           command:
             - /bin/sh
             - -c
@@ -29,7 +29,7 @@ spec:
               readOnly: true
       containers:
         - name: caddy
-          image: caddy:2-alpine@sha256:ae5e525ca6773b0a4ce579c774cb39b3147e1576084139229517bdbcfe3ed812
+          image: caddy:2-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
           ports:
             - name: http
               containerPort: 8080
