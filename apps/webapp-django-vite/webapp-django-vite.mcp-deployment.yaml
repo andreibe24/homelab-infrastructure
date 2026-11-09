@@ -20,7 +20,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: mcp
-          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend:1.4.2@sha256:6b5062aa86acce8b1a1bc89714ff21eff5117e193277ec4f292d7cda6f63a90b
+          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-backend:1.4.3@sha256:05fe536e2da42e34bc4c15337c40adf788505ee7234d5c7b077861994c0944fa
           imagePullPolicy: Always
           command:
             - python
