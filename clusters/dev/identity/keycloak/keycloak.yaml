@@ -1,0 +1,41 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: keycloak
+spec:
+  instances: 1
+  db:
+    vendor: postgres
+    host: keycloak-db-rw
+    database: keycloak
+    usernameSecret:
+      name: keycloak-db-app
+      key: username
+    passwordSecret:
+      name: keycloak-db-app
+      key: password
+  http:
+    httpEnabled: true
+    tlsSecret: keycloak-backchannel-tls
+  hostname:
+    hostname: https://identity.localhost:8443
+  proxy:
+    headers: xforwarded
+  ingress:
+    enabled: false
+  networkPolicy:
+    enabled: true
+    http:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: gateway
+    https:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: monitoring
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: webapp-django-vite
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: keycloak

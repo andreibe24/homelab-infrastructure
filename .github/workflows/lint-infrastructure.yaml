@@ -53,3 +53,6 @@ jobs:
 
       - name: Check homelab bootstrap
         run: ruby clusters/homelab/test_bootstrap.rb
+
+      - name: Check dev identity manifests
+        run: ruby clusters/dev/identity/test_manifests.rb

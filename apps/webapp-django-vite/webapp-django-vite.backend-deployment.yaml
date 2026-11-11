@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: webapp-django-vite-backend
+      annotations:
+        reloader.stakater.com/auto: "true"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -28,6 +30,14 @@ spec:
               drop: ["ALL"]
           ports:
             - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: campfire-oidc
+                optional: true
+          volumeMounts:
+            - name: identity-ca
+              mountPath: /etc/identity-ca
+              readOnly: true
           env:
             - name: DJANGO_SECRET_KEY
               valueFrom:
@@ -55,7 +65,7 @@ spec:
             - name: ALLOWED_HOSTS
               value: campfire.localhost
             - name: CSRF_TRUSTED_ORIGINS
-              value: https://campfire.localhost
+              value: https://campfire.localhost,https://campfire.localhost:8443
             - name: AGENTGATEWAY_BASE_URL
               value: http://agentgateway-proxy.agentgateway.svc.cluster.local:4000/v1
             - name: AGENTGATEWAY_CLIENT_CREDENTIALS
@@ -98,3 +108,8 @@ spec:
               memory: 128Mi
             limits:
               memory: 512Mi
+      volumes:
+        - name: identity-ca
+          configMap:
+            name: identity-ca
+            optional: true

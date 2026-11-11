@@ -46,6 +46,12 @@ Local **Ask Campfire** also needs a running RAG service, a PostgreSQL forum
 database, and a pgvector-enabled embeddings database. Its local URL is
 configurable with `RAG_SERVICE_URL`.
 
+Local development defaults to Django accounts. The dev cluster is configured
+for Keycloak sign-in once the backend and frontend images containing the OIDC
+changes are deployed. Existing accounts must be linked explicitly; see
+[Keycloak and central sign-in](../components/keycloak.md). The source change
+alone does not update the image digests pinned in the Kubernetes manifests.
+
 ### Agentgateway
 
 Forum summaries and drafts use `chat/llm.py`; the separate RAG service uses the
@@ -200,8 +206,9 @@ The `chat-db` and `chat-vectors` CloudNativePG clusters run three instances
 (one primary, two streaming replicas). The backend and MCP server define two
 Django connections: `default` (`DATABASE_HOST=chat-db-rw`, the primary) and
 `replica` (`DATABASE_REPLICA_HOST=chat-db-ro`, the read-only replicas).
-`config.db_router.PrimaryReplicaRouter` sends reads to `replica` and writes and
-migrations to `default`. Leaving `DATABASE_REPLICA_HOST` unset (local SQLite
+`config.db_router.PrimaryReplicaRouter` sends ordinary reads to `replica`, and
+authentication, identity and session reads, writes and migrations to `default`
+to keep sign-in state consistent. Leaving `DATABASE_REPLICA_HOST` unset (local SQLite
 development) keeps a single connection. Reads can briefly lag writes; code that
 must read its own write immediately should use `.using("default")`.
 

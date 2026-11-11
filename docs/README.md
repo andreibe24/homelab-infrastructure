@@ -26,6 +26,7 @@ Paths in the guides are relative to the repository root unless stated otherwise.
 - [Linkerd](components/linkerd.md).
 - [KEDA autoscaling and high availability](components/keda.md).
 - [Monitoring](components/monitoring.md).
+- [Keycloak and central sign-in](components/keycloak.md).
 - [Reloader](components/reloader.md).
 
 Keep application and infrastructure documentation under `docs/`, not beside

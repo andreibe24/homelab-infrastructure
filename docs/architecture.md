@@ -31,6 +31,11 @@ two infrastructure roots; individual Flux Kustomizations can add their own
 dependencies. The imported root and its existing components disable pruning,
 whereas apps and ordinary infrastructure use pruning.
 
+Dev also reconciles a cluster-specific Keycloak operator and instance for
+Grafana and Campfire sign-in. Its operator and CRDs are not pruned, and its
+namespace is protected from Flux pruning. Homelab does not inherit this
+identity deployment or its credentials; see [Keycloak](components/keycloak.md).
+
 Homelab is a planned single control-plane, single worker Talos cluster; the
 repository cannot provision its hardware without operator-supplied addresses and
 disks. Its Flux entry point adopts a Talos-specific Cilium overlay and the

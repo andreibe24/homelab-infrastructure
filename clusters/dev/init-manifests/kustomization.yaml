@@ -7,3 +7,4 @@ resources:
   - infrastructure.ks.yaml
   - apps.ks.yaml
   - secrets.ks.yaml
+  - identity-registration.ks.yaml

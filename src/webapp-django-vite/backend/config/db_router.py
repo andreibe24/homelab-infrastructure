@@ -2,6 +2,8 @@ class PrimaryReplicaRouter:
     """Send reads to the read-only replica and writes to the primary."""
 
     def db_for_read(self, model, **hints):
+        if model._meta.app_label in {"auth", "sessions"} or model._meta.label_lower == "chat.oidcidentity":
+            return "default"
         return "replica"
 
     def db_for_write(self, model, **hints):
