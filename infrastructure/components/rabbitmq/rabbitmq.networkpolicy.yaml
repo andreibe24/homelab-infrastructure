@@ -1,0 +1,53 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cluster-ingress
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: NotIn
+        values: [rabbitmq]
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rabbitmq
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: rabbitmq
+      app.kubernetes.io/name: rabbitmq
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: messaging-lab
+          podSelector:
+            matchLabels:
+              app: messaging-lab
+      ports:
+        - protocol: TCP
+          port: 5671
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: messaging-topology-operator
+      ports:
+        - protocol: TCP
+          port: 15671
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

@@ -53,6 +53,17 @@ app_names.each do |namespace|
   policy = policies.find { |item| item.dig("metadata", "namespace") == namespace && item.dig("metadata", "name") == "application-ingress" }
   assert(policy && policy.dig("spec", "podSelector") == {} && policy.dig("spec", "policyTypes") == ["Ingress"],
          "Missing ingress isolation for #{namespace}")
+  if namespace == "messaging-lab"
+    rules = policy.dig("spec", "ingress")
+    assert(rules.size == 2 &&
+           rules.any? { |rule| rule["from"] == [{ "podSelector" => { "matchLabels" => { "app" => "messaging-lab" } } }] &&
+             rule["ports"] == [{ "port" => 6379, "protocol" => "TCP" }] } &&
+           rules.any? { |rule| rule["from"] == [{ "namespaceSelector" => { "matchLabels" => { "kubernetes.io/metadata.name" => "redis-operator" } },
+                                                    "podSelector" => { "matchLabels" => { "control-plane" => "controller-manager" } } }] &&
+             rule["ports"] == [{ "port" => 9999, "protocol" => "TCP" }] },
+           "Messaging lab must only accept the client and Dragonfly operator")
+    next
+  end
   peers = policy.dig("spec", "ingress").flat_map { |rule| rule.fetch("from", []) }
   allowed_names = peers.filter_map { |peer| peer.dig("namespaceSelector", "matchLabels", "kubernetes.io/metadata.name") }
   expected = %w[gateway monitoring]
@@ -71,6 +82,10 @@ end
     assert(selector == { "matchExpressions" => [{ "key" => "app", "operator" => "NotIn",
                                                    "values" => %w[agentgateway-ratelimit agentgateway-ratelimit-dragonfly] }] },
            "Cluster policy must not widen rate-limiter ingress")
+  elsif namespace == "rabbitmq"
+    assert(selector == { "matchExpressions" => [{ "key" => "app.kubernetes.io/component", "operator" => "NotIn",
+                                                 "values" => ["rabbitmq"] }] },
+           "Cluster policy must not widen RabbitMQ ingress")
   else
     assert(selector == {}, "Cluster policy must select all pods in #{namespace}")
   end

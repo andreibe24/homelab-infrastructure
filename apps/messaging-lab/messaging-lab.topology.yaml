@@ -1,0 +1,105 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  name: messaging-lab
+spec:
+  name: messaging-lab
+  deletionPolicy: retain
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: rabbitmq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: messaging-lab
+spec:
+  usernameFromMeta: true
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: rabbitmq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Permission
+metadata:
+  name: messaging-lab
+spec:
+  vhost: messaging-lab
+  userReference:
+    name: messaging-lab
+  permissions:
+    configure: "^$"
+    write: "^lab\\.events$"
+    read: "^lab\\.jobs$"
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: rabbitmq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: messaging-lab-events
+spec:
+  name: lab.events
+  vhost: messaging-lab
+  type: direct
+  durable: true
+  autoDelete: false
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: rabbitmq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: messaging-lab-jobs
+spec:
+  name: lab.jobs
+  vhost: messaging-lab
+  type: quorum
+  durable: true
+  autoDelete: false
+  deletionPolicy: retain
+  arguments:
+    x-dead-letter-exchange: ""
+    x-dead-letter-routing-key: lab.dead
+    x-dead-letter-strategy: at-least-once
+    x-overflow: reject-publish
+    x-max-length: 1000
+    x-max-length-bytes: 10485760
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: rabbitmq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: messaging-lab-dead
+spec:
+  name: lab.dead
+  vhost: messaging-lab
+  type: quorum
+  durable: true
+  autoDelete: false
+  deletionPolicy: retain
+  arguments:
+    x-max-length: 1000
+    x-max-length-bytes: 10485760
+    x-overflow: reject-publish
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: rabbitmq
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Binding
+metadata:
+  name: messaging-lab-jobs
+spec:
+  vhost: messaging-lab
+  source: lab.events
+  destination: lab.jobs
+  destinationType: queue
+  routingKey: job
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: rabbitmq

@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/rabbitmq/cluster-operator/releases/download/v2.23.2/cluster-operator.yml
+patches:
+  - target:
+      version: v1
+      kind: Namespace
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ignored
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: rabbitmq-cluster-operator
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: rabbitmq-cluster-operator
+      spec:
+        template:
+          metadata:
+            annotations:
+              linkerd.io/inject: disabled
