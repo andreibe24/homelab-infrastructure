@@ -5,7 +5,7 @@ umask 077
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # renovate: datasource=github-releases depName=siderolabs/talos
-TALOS_VERSION="v1.14.5"
+TALOS_VERSION="v1.14.6"
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
 KUBERNETES_VERSION="v1.37.2"
 # renovate: datasource=github-releases depName=kubernetes-sigs/gateway-api
