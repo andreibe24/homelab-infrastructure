@@ -247,6 +247,28 @@ entitled model; local configuration validation alone cannot verify the license.
 
 See the upstream [Kubernetes Copilot example](https://github.com/agentgateway/agentgateway/tree/v1.7.0/examples/llm-copilot).
 
+## Local models (Ollama)
+
+Add the header `x-llm-backend: ollama` to a `POST /v1/chat/completions` request
+to route it to the in-cluster [Ollama](../apps/llm-serving.md) backend
+(`ollama.llm-serving.svc:11434`) instead of Copilot. The same client key,
+authorization, rate limits and guardrails apply, and `forum-app` may request
+`qwen2.5:0.5b` in addition to `gpt-6-luna`. Include `max_completion_tokens`, as
+for Copilot. Without the header, requests continue to use Copilot.
+
+## Observability
+
+- **Metrics:** `monitoring.enabled` in the Helm values creates a controller
+  ServiceMonitor, a proxy PodMonitor and the agentgateway Grafana dashboard
+  (`agentgateway_*` metrics, including LLM token usage) for the Prometheus stack
+  in `monitoring`. The `agentgateway` Flux Kustomization waits for `monitoring`
+  because these resources need its CRDs.
+- **Traces:** `agentgateway-tracing.policy.yaml` samples every request and exports
+  OTLP/gRPC to `langfuse-otel-collector.langfuse`, which forwards to
+  [Langfuse](langfuse.md). A `ReferenceGrant` in `langfuse` permits the
+  cross-namespace reference. Spans carry `gen_ai.*` model and token attributes;
+  prompt and completion bodies are not captured.
+
 ## forum-app policies
 
 The existing client key is preserved; only the Secret entry name and its format

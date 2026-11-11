@@ -28,3 +28,6 @@ spec:
         memory: 256Mi
     istio:
       enabled: false
+    # Creates the controller ServiceMonitor, proxy PodMonitor and Grafana dashboard.
+    monitoring:
+      enabled: true

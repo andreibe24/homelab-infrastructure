@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: langfuse-otel-collector
+data:
+  # Agentgateway exports OTLP/gRPC; Langfuse ingests only OTLP/HTTP with Basic auth.
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+    processors:
+      batch:
+        timeout: 5s
+    exporters:
+      otlphttp/langfuse:
+        endpoint: http://langfuse-web:3000/api/public/otel
+        headers:
+          Authorization: ${env:LANGFUSE_OTEL_AUTHORIZATION}
+        retry_on_failure:
+          enabled: true
+          max_elapsed_time: 300s
+    service:
+      telemetry:
+        metrics:
+          level: none
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlphttp/langfuse]
