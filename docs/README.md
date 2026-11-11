@@ -22,6 +22,7 @@ Paths in the guides are relative to the repository root unless stated otherwise.
 
 - [Campfire (Django + Vite)](apps/webapp-django-vite.md).
 - [Campfire source-code map](apps/webapp-django-vite-source.md).
+- [MLflow experiment tracking and training](apps/mlops.md).
 - [Agentgateway](components/agentgateway.md).
 - [Linkerd](components/linkerd.md).
 - [KEDA autoscaling and high availability](components/keda.md).
