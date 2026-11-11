@@ -20,7 +20,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: rag
-          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-rag:1.4.3@sha256:4a8688aefd7636d540c34833ae0f81c3308cd5e5d736c9694a5a789901718124
+          image: ghcr.io/andreibe24/homelab-infrastructure/webapp-django-vite-rag:1.4.4@sha256:3cb8a5723fe56c0fa0eae896da4185f4560b63d210ce854e86a28e0ae4388804
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
