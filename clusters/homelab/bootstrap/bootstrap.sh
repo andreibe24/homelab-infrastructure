@@ -11,7 +11,7 @@ KUBERNETES_VERSION="v1.37.2"
 # renovate: datasource=github-releases depName=kubernetes-sigs/gateway-api
 GATEWAY_API_VERSION="v1.7.0"
 # renovate: datasource=docker depName=quay.io/cilium/charts/cilium
-CILIUM_VERSION="1.20.4"
+CILIUM_VERSION="1.20.5"
 # renovate: datasource=docker depName=ghcr.io/controlplaneio-fluxcd/charts/flux-operator
 FLUX_OPERATOR_VERSION="0.62.1"
 
