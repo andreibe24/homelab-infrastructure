@@ -13,7 +13,7 @@ GATEWAY_API_VERSION="v1.7.0"
 # renovate: datasource=docker depName=quay.io/cilium/charts/cilium
 CILIUM_VERSION="1.20.5"
 # renovate: datasource=docker depName=ghcr.io/controlplaneio-fluxcd/charts/flux-operator
-FLUX_OPERATOR_VERSION="0.63.0"
+FLUX_OPERATOR_VERSION="0.63.1"
 
 STATE_DIR="${STATE_DIR:-$HOME/.config/talos/homelab}"
 CONTROL_PLANE_IP="${CONTROL_PLANE_IP:-}"
